@@ -1,0 +1,5 @@
+node_modules/
+* - Copy*
+public/allRows*
+test*
+yarn-error.log
