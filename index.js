@@ -1006,81 +1006,110 @@ instAll = [
 ];
 
 const axios = require('axios');
-let histSendCntr = 0,
+let pclosingSendCntr = 0,
   histRecvCntr = 0,
   histError = 0;
 
-async function GetPClosing() {
-  let HistPr = new Promise((res, rej) => {
-    instAll
-      .filter((v, i) => i < 10)
-      .forEach((v, i) => {
-        url =
-          'http://www.tsetmc.com/tsev2/data/instinfodata.aspx?i=' +
-          v +
-          '&c=44+';
-        histSendCntr++;
-        axios
-          .get(url)
-          .then(response => {
-            histRecvCntr++;
-            console.log('pageOk = ', i);
-            if (histRecvCntr == histSendCntr) {
-              res(1);
-            }
-            pClosing = response.data.split(';')[0].split(',')[2];
-            console.log('pClosing = ', pClosing);
-          })
-          .catch(error => {
-            console.log('histError = ', i);
-            histRecvCntr++;
-            if (histRecvCntr == histSendCntr) {
-              res(1);
-            }
-          });
-      });
+var MongoClient = require('mongodb').MongoClient;
+let dbo, db;
+async function ConnectToDB() {
+  db = await MongoClient.connect(
+    'mongodb://filterbo_database:11111aaaaa@localhost:27017/filterbo_database',
+  );
+  dbo = db.db('filterbo_database');
+  instAll.map((v, i) => {
+    dbo.collection('allRows').insertOne({inscode: v}, function(err, res) {
+      if (err) {
+        console.log('err2 = ', err);
+        throw err;
+      }
+      console.log('1 document inserted');
+      db.close();
+    });
   });
+}
 
-  await HistPr;
+ConnectToDB();
+
+let globalCntr = 0;
+function GetPClosing() {
+  globalCntr++;
+  instAll
+    .filter((v, i) => i < 100)
+    .forEach((inscode, i) => {
+      url =
+        'http://www.tsetmc.com/tsev2/data/instinfodata.aspx?i=' +
+        inscode +
+        '&c=44+';
+      histSendCntr++;
+      axios
+        .get(url)
+        .then(response => {
+          histRecvCntr++;
+          console.log('pClosingOk = ', i);
+
+          pClosing = response.data.split(';')[0].split(',')[2];
+          allRows.find(v => v.inscode == inscode)
+            ? (allRows[i].pClosing = pClosing)
+            : (allRows.pClosing = 0);
+          console.log('allRows = ', allRows);
+        })
+        .catch(error => {
+          console.log('pClosingError = ', i);
+          histRecvCntr++;
+        });
+    });
 }
 
 histSendCntr = 0;
 histRecvCntr = 0;
 histError = 0;
 
-async function GetSymbolPage() {
-  let HistPr = new Promise((res, rej) => {
-    instAll
-      .filter((v, i) => i < 10)
-      .forEach((v, i) => {
-        url = 'http://www.tsetmc.com/loader.aspx?ParTree=151311&i=' + v;
-        histSendCntr++;
-        axios
-          .get(url)
-          .then(response => {
-            histRecvCntr++;
-            console.log('pageOk = ', i);
-            if (histRecvCntr == histSendCntr) {
-              res(1);
-            }
-            let body = response.data;
+async function main() {
+  async function GetSymbolPage() {
+    let HistPr = new Promise((res, rej) => {
+      instAll
+        .filter((v, i) => i < 10)
+        .forEach((v, i) => {
+          url = 'http://www.tsetmc.com/loader.aspx?ParTree=151311&i=' + v;
+          histSendCntr++;
+          axios
+            .get(url)
+            .then(response => {
+              histRecvCntr++;
+              console.log('pageOk = ', i);
+              if (histRecvCntr == histSendCntr) {
+                res(1);
+              }
+              let body = response.data;
 
-            var regex = /LSecVal='(.*?)',Cg/g;
-            match = regex.exec(body);
-            csName = match[1];
-            console.log('csName = ', csName);
-          })
-          .catch(error => {
-            console.log('histError = ', i);
-            histRecvCntr++;
-            if (histRecvCntr == histSendCntr) {
-              res(1);
-            }
-          });
-      });
-  });
+              var regex = /LSecVal='(.*?)',Cg/g;
+              match = regex.exec(body);
+              csName = match[1];
+              console.log('csName = ', csName);
+            })
+            .catch(error => {
+              console.log('histError = ', i);
+              histRecvCntr++;
+              if (histRecvCntr == histSendCntr) {
+                res(1);
+              }
+            });
+        });
+    });
 
-  await HistPr;
+    await HistPr;
+  }
+  //GetSymbolPage();
 }
-GetPClosing();
-GetSymbolPage();
+//main();
+setInterval(GetPClosing, 10000);
+let out;
+
+const express = require('express');
+const app = express();
+const port = 3010;
+
+app.get('/', (req, res) => res.send(allRows[globalCntr]));
+
+app.listen(port, () => console.log(`Example app listening on port ${port}!`));

@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/mojtabamarashee/nodeServer#readme",
   "devDependencies": {
-    "axios": "^0.19.2"
+    "axios": "^0.19.2",
+    "express": "^4.17.1"
   }
 }
