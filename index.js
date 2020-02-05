@@ -1,4 +1,4 @@
-let local = 1;
+let local = 0;
 const Http = require('http'),
 	fs = require('fs'),
 	path = require('path'),
@@ -1079,7 +1079,6 @@ let globalCntr = 0;
 var file1 = fs.createWriteStream('allrows.txt');
 function GetMarketInit() {
 	let url = 'http://www.tsetmc.com/tsev2/data/MarketWatchInit.aspx?h=0&r=0';
-	console.log('url = ', url);
 	axios
 		.get(url)
 		.then(response => {
@@ -1123,32 +1122,35 @@ function GetPClosing() {
 	globalCntr++;
 	//out = '';
 	out += globalCntr.toString() + ',';
-	instAll.filter((v, i) => i < 100).forEach((inscode, i) => {
+	instAll.filter((v, i) => i < 10000).forEach((inscode, i) => {
 		let url1 = 'http://www.tsetmc.com/tsev2/data/instinfodata.aspx?i=' + inscode + '&c=44+';
 		//console.log('urll = ', urll);
 		axios
 			.get(urll)
 			.then(response => {
+				let pClosing = response.data.split(';')[0].split(',')[2];
+				allRows.findIndex(v => v.inscode == inscode) ? null : allRows.push({pl: pClosing, inscode: inscode});
+
 				//histRecvCntr++;
 				//pClosing = 100;
 				console.log(inscode);
-				MongoClient.connect(
-					url,
-					(err, client) => {
-						let pClosing = response.data.split(';')[0].split(',')[2];
-						//out += pClosing.toString() + ':';
-						dbo = client.db('filterbo_database');
-						console.log(pClosing + ':' + inscode);
-						dbo.collection('allRows').updateOne(
-							{inscode: inscode},
-							{$set: {pClosing: pClosing}},
-							(e, r) => {
-								if (err) throw err;
-								// client.close();
-							},
-						);
-					},
-				);
+				//MongoClient.connect(
+				//	url,
+				//	(err, client) => {
+				//		let pClosing = response.data.split(';')[0].split(',')[2];
+				//		//out += pClosing.toString() + ':';
+				//		dbo = client.db('filterbo_database');
+				//		console.log(pClosing + ':' + inscode);
+				//		dbo.collection('allRows').updateOne(
+				//			{inscode: inscode},
+				//			{$set: {pClosing: pClosing}},
+				//			(e, r) => {
+				//				if (err) throw err;
+				//				// client.close();
+				//			},
+				//		);
+				//	},
+				//);
 			})
 			.catch(error => {
 				out += error;
@@ -1194,13 +1196,13 @@ async function main() {
 	//GetSymbolPage();
 }
 //main();
-//setInterval(GetPClosing, 4000);
+setTimeout(GetPClosing, 20000);
 GetMarketInit();
 setInterval(GetMarketInit, 10000);
 
 const express = require('express');
 const app = express();
-const port = 3011;
+const port = 3012;
 app.use(express.static('.'));
 app.get('/', (req, res) => {
 	//MongoClient.connect(
