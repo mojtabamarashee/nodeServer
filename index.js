@@ -1036,68 +1036,71 @@ instAll = [
 
 let out = '';
 const axios = require('axios');
-let pclosingSendCntr = 0,
-  histRecvCntr = 0,
-  histError = 0;
+
+(ctSendCntr = 0), (ctRecvCntr = 0);
+pClosingSendCntr = 0;
+pClosingRecvCntr = 0;
+bodySendCntr = 0;
+bodyRecvCntr = 0;
+histError = 0;
 
 var MongoClient = require('mongodb').MongoClient;
 let dbo;
-let allRows = [];
 
 mongoUrl = local
   ? 'mongodb://localhost:27017'
   : 'mongodb://filterbo_database:11111aaaaa@localhost:27017/filterbo_database';
 
-function ConnectToDB() {
-  let db = MongoClient.connect(
-    mongoUrl,
-    (e, db) => {
-      dbo = db.db('filterbo_database');
-      instAll
-        .filter((v, i) => i < 100)
-        .forEach((v, i) => {
-          let obj = {inscode: v.inscode, pClosing: 0};
-          allRows.push(obj);
-        });
-      dbo.collection('allRows').insertMany(allRows, function(err, res) {
-        if (err) {
-          throw err;
-        }
-      });
-    },
-  );
-}
+//function ConnectToDB() {
+//  let db = MongoClient.connect(
+//    mongoUrl,
+//    (e, db) => {
+//      dbo = db.db('filterbo_database');
+//      instAll
+//        .filter((v, i) => i < 100)
+//        .forEach((v, i) => {
+//          let obj = {inscode: v.inscode, pClosing: 0};
+//          allRows.push(obj);
+//        });
+//      dbo.collection('allRows').insertMany(allRows, function(err, res) {
+//        if (err) {
+//          throw err;
+//        }
+//      });
+//    },
+//  );
+//}
 
 let url =
   'mongodb://filterbo_database:11111aaaaa@localhost:27017/filterbo_database';
 
-function CreateCollection() {
-  MongoClient.connect(
-    mongoUrl,
-    function(err, db) {
-      if (err) throw err;
-      var dbo = db.db('filterbo_database');
-      dbo.createCollection('allRows', function(err, res) {
-        if (err) throw err;
-        console.log('Collection created!');
-        out += 'Collection created' + '\n\r';
-        db.close();
-      });
-    },
-  );
-}
+//function CreateCollection() {
+//  MongoClient.connect(
+//    mongoUrl,
+//    function(err, db) {
+//      if (err) throw err;
+//      var dbo = db.db('filterbo_database');
+//      dbo.createCollection('allRows', function(err, res) {
+//        if (err) throw err;
+//        console.log('Collection created!');
+//        out += 'Collection created' + '\n\r';
+//        db.close();
+//      });
+//    },
+//  );
+//}
 
-function ClearDB() {
-  MongoClient.connect(
-    mongoUrl,
-    (err, client) => {
-      dbo = client.db('filterbo_database');
-      dbo.collection('allRows').remove({});
-      out += 'db cleared' + '\n\r';
-      console.log('db cleared');
-    },
-  );
-}
+//function ClearDB() {
+//  MongoClient.connect(
+//    mongoUrl,
+//    (err, client) => {
+//      dbo = client.db('filterbo_database');
+//      dbo.collection('allRows').remove({});
+//      out += 'db cleared' + '\n\r';
+//      console.log('db cleared');
+//    },
+//  );
+//}
 
 //ClearDB();
 //CreateCollection();
@@ -1108,6 +1111,7 @@ let globalCntr = 0;
 //var file = fs.createWriteStream('init.txt');
 var file1 = fs.createWriteStream('allrows.txt');
 let successCntr = 0;
+let insertedCntr = 0;
 let errorCntr = 0;
 let testCntr = 0;
 function GetDate() {
@@ -1123,166 +1127,310 @@ function GetDate() {
   return date;
 }
 function GetMarketInit(dbo, id) {
-  let url = 'http://www.tsetmc.com/tsev2/data/MarketWatchInit.aspx?h=0&r=0';
-  let error = 1;
-  dbo.collection('allRows').remove({});
-  date = GetDate();
-  axios
-    .get(url, {
-      headers: {
-        Accept: '*/*',
-        'Accept-Encoding': 'gzip, deflate',
-        'Accept-Language':
-          'en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6,ar;q=0.5,sd;q=0.4',
-        Connection: 'keep-alive',
-        Host: 'www.tsetmc.com',
-        Referer: 'http://www.tsetmc.com/Loader.aspx?ParTree=15131F',
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36',
-      },
-    })
-    .then(response => {
-      response.data.split(';').map((v, i) => {
-        allRows[i] = {};
-        t = v.split(',');
-        successCntr++;
-        //console.log('successCntr = ', successCntr);
+  return new Promise(async (res, rej) => {
+    let url = 'http://www.tsetmc.com/tsev2/data/MarketWatchInit.aspx?h=0&r=0';
+    let error = 1;
+    date = GetDate();
+    axios
+      .get(url, {
+        headers: {
+          Accept: '*/*',
+          'Accept-Encoding': 'gzip, deflate',
+          'Accept-Language':
+            'en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6,ar;q=0.5,sd;q=0.4',
+          Connection: 'keep-alive',
+          Host: 'www.tsetmc.com',
+          Referer: 'http://www.tsetmc.com/Loader.aspx?ParTree=15131F',
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36',
+        },
+      })
+      .then(async response => {
+        await response.data.split(';').map(async (v, i) => {
+          t = v.split(',');
+          successCntr++;
+          inscode = t[0];
+          l18 = t[2];
+          pc = t[6];
+          pl = t[7];
+          tvol = t[9];
+          tmin = t[11];
+          tmax = t[12];
+          tmed = t[13];
+          eps = t[14];
+          flow = t[17];
+          cs = t[18];
+          pe = Math.round((Number(pc) / Number(eps)) * 100) / 100;
+          name = l18
+            .toString()
+            .replace('ي', 'ی')
+            .replace('ي', 'ی')
+            .replace('ي', 'ی')
+            .replace('ك', 'ک')
+            .replace('ك', 'ک')
+            .replace('ك', 'ک');
 
-        inscode = t[0];
-        l18 = t[2];
-        pc = t[6];
-        pl = t[7];
-        tvol = t[9];
-        tmin = t[11];
-        tmax = t[12];
-        tmed = t[13];
-        eps = t[14];
-        flow = t[17];
-        cs = t[18];
+          dbo.collection('allRows').updateOne(
+            {name: name},
+            {
+              $set: {
+                pl: pl,
+                tmin: tmin,
+                tmax: tmax,
+                tmed: tmed,
+                tvol: tvol,
+                pc: pc,
+                l18: l18,
+                inscode: inscode,
+                id: id,
+                pe: pe,
+                esp: eps,
+                date: date,
+              },
+            },
+          );
 
-        pe = Math.round((Number(pc) / Number(eps)) * 100) / 100;
-
-        allRows[i].pl = pl;
-        allRows[i].tmin = tmin;
-        allRows[i].tmax = tmax;
-        allRows[i].tmed = tmed;
-        allRows[i].tvol = tvol;
-        allRows[i].pc = pc;
-        allRows[i].l18 = l18;
-        allRows[i].name = allRows[i].l18
-          .toString()
-          .replace('ي', 'ی')
-          .replace('ي', 'ی')
-          .replace('ي', 'ی')
-          .replace('ك', 'ک')
-          .replace('ك', 'ک')
-          .replace('ك', 'ک');
-        allRows[i].inscode = inscode;
-        allRows[i].id = id;
-        allRows[i].pe = pe;
-        allRows[i].esp = eps;
-
-        allRows[i].date = date;
-        dbo
-          .collection('allRows')
-          .insertOne(allRows[i], () => console.log(testCntr++));
+          marketInitDone = 1;
+        });
+        console.log('marketInitDone1 = ', marketInitDone);
+        res(1);
+      })
+      .catch(error => {
+        console.log('error = ', error);
         marketInitDone = 0;
+        console.log('marketInitDone2 = ', marketInitDone);
+        errorCntr++;
       });
-    })
-    .catch(error => {
-      console.log('error = ', error);
-      marketInitDone = 1;
-      errorCntr++;
-    });
-  //allRows.map((v, i) => file1.write('{inscode : "' + v.inscode + '", name : "' + v.name + '"}' + '\n'));
-  console.log('finish');
+    //allRows.map((v, i) => file1.write('{inscode : "' + v.inscode + '", name : "' + v.name + '"}' + '\n'));
+  });
 }
 
 function GetClientType(dbo, id) {
-  instAll.forEach((v, i) => {
-    if (v.l18.match(/^([^0-9]*)$/) && !v.ctHist) {
-      let ind = allRows.find((v1, i1) => v1.name == v.name);
-      url = 'http://tsetmc.com/tsev2/data/clienttype.aspx?i=' + v.inscode;
-      ctSendCntr++;
-      console.log('ctSendCntr = ', ctSendCntr);
-      axios
-        .get(url)
-        .then(response => {
-          ctRecvCntr++;
-          console.log('ctRecvCntr = ', ctRecvCntr);
-          console.log('ctOk = ', i);
-          allRows[ind].ctHist = response.data.split(';').slice(0, 30);
-          dbo
-            .collection('allRows')
-            .updateOne({name: v.name}, {$set: {ctHist: allRows[ind].ctHist}});
+  return new Promise(async (res, rej) => {
+    setTimeout(() => (console.log('f3'), res(1)), 60000);
+    let allRows = await dbo
+      .collection('allRows')
+      .find()
+      .toArray();
 
-          if (ctRecvCntr == ctSendCntr) {
-            //  res(1);
-          }
-        })
-        .catch(error => {
-          ctRecvCntr++;
-          console.log('ctRecvCntr = ', ctRecvCntr);
-          if (ctRecvCntr == ctSendCntr) {
-            //res(1);
-          }
-          console.log('ctError = ', i);
-        });
+    instAll.forEach((v, i) => {
+      let ind = allRows.findIndex((v1, i1) => v1.name == v.name);
+      if (v.name.match(/^([^0-9]*)$/) && !allRows[ind].ctHist) {
+        url = 'http://tsetmc.com/tsev2/data/clienttype.aspx?i=' + v.inscode;
+        ctSendCntr++;
+        //console.log('ctSendCntr = ', ctSendCntr);
+        axios
+          .get(url)
+          .then(response => {
+            ctRecvCntr++;
+            //console.log('ctRecvCntr = ', ctRecvCntr);
+            console.log('ctOk = ', ctRecvCntr);
+            ctHist = response.data.split(';').slice(0, 30);
+            dbo
+              .collection('allRows')
+              .updateOne({name: v.name}, {$set: {ctHist: ctHist}});
+
+            if (ctRecvCntr == ctSendCntr) {
+              console.log('res = ', res);
+              res(1);
+            }
+          })
+          .catch(error => {
+            ctRecvCntr++;
+            //console.log('ctRecvCntr = ', ctRecvCntr);
+            console.log('ctError = ', error.code);
+            if (ctRecvCntr == ctSendCntr) {
+              console.log('res = ', res);
+              res(1);
+            }
+          });
+      } else {
+        //console.log('histExist = ', i);
+      }
+    });
+  });
+}
+
+async function GetBodyValues(body, v, dbo) {
+  var regex = /LVal18AFC='(.*?)',D/g;
+  match = regex.exec(body);
+  try {
+    let name = match[1];
+
+    var regex = /,KAjCapValCpsIdx='(.*?)',P/g;
+    cntr = 0;
+    match = regex.exec(body);
+    floatVal = match[1];
+    let ind = allRows.findIndex((v1, i1) => v1.name == v.name);
+
+    //var ma = /بازار پايه زرد فرابورس/g;
+    //bodies = body.split('<!doctype html>');
+    //var file = fs.createWriteStream('color.txt');
+    //allRows.forEach((v, i) => {
+    //  bd = bodies.find((v1, i1) => v1.match("InsCode='" + v.inscode));
+    //  //v.body = bd;
+    //  v.color = 'y';
+    //  //if (v.body.match(ma)) {
+    //  //	file.write(v.l18 + '\n');
+    //  //}
+    //});
+
+    var regex = /,ZTitad=(.*?),CI/g;
+    cntr = 0;
+    match = regex.exec(body);
+    totalVol = match[1];
+
+    var regex = /,InsCode='(.*?)',B/g;
+    match = regex.exec(body);
+    insCode = match[1];
+
+    var regex = /,SectorPE='(.*?)',KAjC/g;
+    match = regex.exec(body);
+    sectorPE = match[1];
+
+    var regex = /LSecVal='(.*?)',Cg/g;
+    match = regex.exec(body);
+    csName = match[1];
+
+    var regex = /,Title='.*',Fa/g;
+    match = regex.exec(body);
+    if (match[0].match('زرد')) {
+      color = 'yellow';
+    } else if (match[0].match('قرمز')) {
+      color = 'red';
+    } else if (match[0].match('نارنج')) {
+      color = 'orange';
     } else {
-      //console.log('histExist = ', i);
+      color = 'black';
     }
+    //allRows.forEach((v, i) => {
+    //  index = insCode.findIndex(v1 => v1 == v.inscode);
+    //  allRows[i].floatVal = floatVal[index];
+    //  allRows[i].totalVol = totalVol[index];
+    //  allRows[i].sectorPE = sectorPE[index];
+    //  allRows[i].csName = csName[index];
+    //  allRows[i].color = color[index];
+    //});,
+
+    await dbo.collection('allRows').updateOne(
+      {name: v.name},
+      {
+        $set: {
+          floatVal: floatVal,
+          totalVol: totalVol,
+          sectorPE: sectorPE,
+          csName: csName,
+          color: color,
+        },
+      },
+    );
+  } catch (e) {
+    console.log('catch bodyError = ', e);
+  }
+}
+
+function GetBody(dbo, id) {
+  return new Promise(async (res, rej) => {
+    setTimeout(() => (console.log('f'), res(1)), 60000);
+    let allRows = await dbo
+      .collection('allRows')
+      .find()
+      .toArray();
+
+    instAll.forEach((v, i) => {
+      let ind = allRows.findIndex((v1, i1) => v1.name == v.name);
+      if (v.name.match(/^([^0-9]*)$/) && allRows[ind].body != 1) {
+        url = 'http://tsetmc.com//loader.aspx?ParTree=151311&i=' + v.inscode;
+        bodySendCntr++;
+        axios
+          .get(url)
+          .then(response => {
+            bodyRecvCntr++;
+            console.log('bodyOk = ', bodyRecvCntr);
+            allRows[ind].body = 1;
+            GetBodyValues(response.data, v, dbo);
+            //var row = dbo
+            //  .collection('allRows')
+            //  .updateOne(
+            //    {name: v.name},
+            //    {$set: {vHist: vHist, pClosingHist: pClosingHist}},
+            //  );
+            if (bodyRecvCntr == bodySendCntr) {
+              res(1);
+            }
+          })
+
+          .catch(err => {
+            bodyRecvCntr++;
+            if (bodyRecvCntr == bodySendCntr) {
+              res(1);
+            }
+            console.log('bodyError = ', err.code);
+          });
+      }
+    });
   });
 }
 
 function GetPClosingHist(dbo, id) {
-  instAll.forEach((v, i) => {
-    let ind = allRows.find((v1, i1) => v1.name == v.name);
-    if (v.name.match(/^([^0-9]*)$/) && !allRows[ind].pClosingHist) {
-      url =
-        'http://tsetmc.com/tsev2/chart/data/Financial.aspx?i=' +
-        v.inscode +
-        '&t=ph&a=1';
-      histSendCntr++;
-      axios
-        .get(url)
-        .then(response => {
-          histRecvCntr++;
-          console.log('histOk = ', i);
-          if (histRecvCntr == histSendCntr) {
-            //res(1);
-          }
-          pClosingHist = response.data
-            .split(';')
-            .map(v => v.split(','))
-            .map(v => v[6])
-            .map(v => Number(v))
-            .map(v => Number(v));
+  return new Promise(async (res, rej) => {
+    setTimeout(() => (console.log('f1'), res(1)), 60000);
+    let allRows = await dbo
+      .collection('allRows')
+      .find()
+      .toArray();
+    instAll.forEach(async (v, i) => {
+      let ind = allRows.findIndex((v1, i1) => v1.name == v.name);
+      if (ind != -1) {
+        //        console.log("v = ", v);
+        if (v.name.match(/^([^0-9]*)$/) && !allRows[ind].pClosingHist) {
+          url =
+            'http://tsetmc.com/tsev2/chart/data/Financial.aspx?i=' +
+            v.inscode +
+            '&t=ph&a=1';
+          pClosingSendCntr++;
+          axios
+            .get(url, {name : 'test'}, {timeout: 60})
+            .then(response => {
+              pClosingRecvCntr++;
+              console.log('pclosingOk = ', pClosingRecvCntr);
+              if (pClosingRecvCntr == pClosingSendCntr) {
+                res(1);
+              }
+              pClosingHist = response.data
+                .split(';')
+                .map(v => v.split(','))
+                .map(v => v[6])
+                .map(v => Number(v))
+                .map(v => Number(v));
 
-          vHist = response.data
-            .split(';')
-            .map(v => v.split(','))
-            .map(v => v[5])
-            .map(v => Number(v))
-            .map(v => Number(v));
+              vHist = response.data
+                .split(';')
+                .map(v => v.split(','))
+                .map(v => v[5])
+                .map(v => Number(v))
+                .map(v => Number(v));
 
-          allRows[ind].vHist = vHist;
-          allRows[ind].pClosingHist = pClosingHist;
-          allRows[ind].pClosingId = id;
-          var row = dbo
-            .collection('allRows')
-            .updateOne(
-              {name: v.name},
-              {$set: {vHist: vHist, pClosingHist: pClosingHist}},
-            );
-        })
-        .catch(error => {
-          histRecvCntr++;
-          if (histRecvCntr == histSendCntr) {
-            //res(1);
-          }
-          console.log('histError = ', i);
-        });
-    }
+              allRows[ind].vHist = vHist;
+              allRows[ind].pClosingHist = pClosingHist;
+              allRows[ind].pClosingId = id;
+              var row = dbo
+                .collection('allRows')
+                .updateOne(
+                  {name: v.name},
+                  {$set: {vHist: vHist, pClosingHist: pClosingHist}},
+                );
+            })
+            .catch(error => {
+              pClosingRecvCntr++;
+              console.log('pclosingError = ', error.code);
+              if (pClosingRecvCntr == pClosingSendCntr) {
+                res(1);
+              }
+            });
+        }
+      }
+    });
   });
 }
 
@@ -1339,48 +1487,63 @@ function GetPClosing() {
     });
 }
 
-histSendCntr = 0;
-histRecvCntr = 0;
-histError = 0;
+//async function main() {
+//  async function GetSymbolPage() {
+//    let HistPr = new Promise((res, rej) => {
+//      instAll
+//        .filter((v, i) => i < 100)
+//        .forEach((v, i) => {
+//          url = 'http://www.tsetmc.com/loader.aspx?ParTree=151311&i=' + v;
+//          histSendCntr++;
+//          axios
+//            .get(url)
+//            .then(response => {
+//              histRecvCntr++;
+//              if (histRecvCntr == histSendCntr) {
+//                res(1);
+//              }
+//              let body = response.data;
+//
+//              var regex = /LSecVal='(.*?)',Cg/g;
+//              match = regex.exec(body);
+//              csName = match[1];
+//            })
+//            .catch(error => {
+//              histRecvCntr++;
+//              if (histRecvCntr == histSendCntr) {
+//                res(1);
+//              }
+//            });
+//        });
+//    });
+//
+//    await HistPr;
+//  }
+//  //GetSymbolPage();
+//}
 
-async function main() {
-  async function GetSymbolPage() {
-    let HistPr = new Promise((res, rej) => {
-      instAll
-        .filter((v, i) => i < 100)
-        .forEach((v, i) => {
-          url = 'http://www.tsetmc.com/loader.aspx?ParTree=151311&i=' + v;
-          histSendCntr++;
-          axios
-            .get(url)
-            .then(response => {
-              histRecvCntr++;
-              if (histRecvCntr == histSendCntr) {
-                res(1);
-              }
-              let body = response.data;
+async function InitDbAndAllRows(dbo) {
+  return new Promise(async (res, rej) => {
+    allRows = [];
 
-              var regex = /LSecVal='(.*?)',Cg/g;
-              match = regex.exec(body);
-              csName = match[1];
-            })
-            .catch(error => {
-              histRecvCntr++;
-              if (histRecvCntr == histSendCntr) {
-                res(1);
-              }
-            });
-        });
+    try {
+      dbo.collection('allRows').remove({});
+    } catch (e) {
+      //console.log('e = ', e);
+    }
+    console.log('d1');
+
+    await dbo.createCollection('allRows');
+
+    instAll.forEach((v, i) => {
+      allRows.push({inscode: v.inscode, name: v.name});
     });
 
-    await HistPr;
-  }
-  //GetSymbolPage();
+    await dbo.collection('allRows').insertMany(allRows);
+    console.log('init db finished');
+    res(1);
+  });
 }
-//main();
-//setTimeout(GetPClosing, 20 * 1000);
-//setInterval(GetPClosing, 40 * 60 * 1000);
-//GetPClosing();
 
 let id = 2323;
 MongoClient.connect(
@@ -1388,15 +1551,24 @@ MongoClient.connect(
   (err, client) => {
     console.log('err1 = ', err);
     var dbo = client.db('filterbo_database');
-    dbo.createCollection('allRows', function(err, res) {
-      console.log('err2 = ', err);
-      marketInitDone == 0 ? GetMarketInit(dbo, id) : null;
-      GetPClosingHist(dbo, id);
-      GetClientType(dbo, id);
+    dbo.createCollection('allRows', async (err, res) => {
+      await InitDbAndAllRows(dbo);
+      for (i = 0; i < 10; i++) {
+        console.log('round = ', i);
+        console.log('round = ', i);
+        console.log('round = ', i);
+        await GetBody(dbo, id);
+        console.log('bodyDone');
+        await GetMarketInit(dbo, id);
+        console.log('marketInitDone3 = ', marketInitDone);
+        await GetPClosingHist(dbo, id);
+        console.log('GetPClosingHistDone');
+        await GetClientType(dbo, id);
+        console.log('GetClientTypeDone');
+      }
     });
   },
 );
-//setInterval(GetMarketInit, 1 * 1000);
 
 const express = require('express');
 const app = express();
