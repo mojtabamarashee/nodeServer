@@ -1447,7 +1447,7 @@ function GetPClosing() {
         '&c=44+';
       //console.log('urll = ', urll);
       axios
-        .get(urll)
+        .get(urll, {name: 'tese'}, {timeout:1000})
         .then(response => {
           let pClosing = response.data.split(';')[0].split(',')[2];
 
