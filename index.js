@@ -1,4 +1,4 @@
-let local = 1;
+let local = 0;
 const Http = require('http'),
 	fs = require('fs'),
 	path = require('path'),
