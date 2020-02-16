@@ -1,4 +1,4 @@
-let local = 3;
+let local = 'POPULATE_DB';
 var jalaali = require('jalaali-js');
 const Http = require('http'),
 	fs = require('fs'),
@@ -1048,63 +1048,11 @@ histError = 0;
 var MongoClient = require('mongodb').MongoClient;
 let dbo;
 
-if ((local = 1)) mongoUrl = 'mongodb://localhost:27017';
-if ((local = 0)) mongoUrl = 'mongodb://filterbo_database:11111aaaaa@localhost:27017/filterbo_database';
-if ((local = 3)) mongoUrl = 'mongodb://filterbo_database:11111aaaaa@filterbourse.ir:27017/filterbo_database';
-
-//function ConnectToDB() {
-//  let db = MongoClient.connect(
-//    mongoUrl,
-//    (e, db) => {
-//      dbo = db.db('filterbo_database');
-//      instAll
-//        .filter((v, i) => i < 100)
-//        .forEach((v, i) => {
-//          let obj = {inscode: v.inscode, pClosing: 0};
-//          allRows.push(obj);
-//        });
-//      dbo.collection('allRows').insertMany(allRows, function(err, res) {
-//        if (err) {
-//          throw err;
-//        }
-//      });
-//    },
-//  );
-//}
+if (local == 'LOCAL') mongoUrl = 'mongodb://localhost:27017';
+if (local == 'SERVER') mongoUrl = 'mongodb://filterbo_database:11111aaaaa@localhost:27017/filterbo_database';
+if (local == 'POPULATE_DB') mongoUrl = 'mongodb://filterbo_database:11111aaaaa@filterbourse.ir:27017/filterbo_database';
 
 let url = 'mongodb://filterbo_database:11111aaaaa@localhost:27017/filterbo_database';
-
-//function CreateCollection() {
-//  MongoClient.connect(
-//    mongoUrl,
-//    function(err, db) {
-//      if (err) throw err;
-//      var dbo = db.db('filterbo_database');
-//      dbo.createCollection('allRows', function(err, res) {
-//        if (err) throw err;
-//        console.log('Collection created!');
-//        out += 'Collection created' + '\n\r';
-//        db.close();
-//      });
-//    },
-//  );
-//}
-
-//function ClearDB() {
-//  MongoClient.connect(
-//    mongoUrl,
-//    (err, client) => {
-//      dbo = client.db('filterbo_database');
-//      dbo.collection('allRows').remove({});
-//      out += 'db cleared' + '\n\r';
-//      console.log('db cleared');
-//    },
-//  );
-//}
-
-//ClearDB();
-//CreateCollection();
-//ConnectToDB();
 
 let globalCntr = 0;
 
@@ -1154,50 +1102,110 @@ function GetMarketInit(dbo, id) {
 			})
 			.then(async response => {
 				await response.data.split(';').map(async (v, i) => {
-					t = v.split(',');
 					successCntr++;
-					inscode = t[0];
-					l18 = t[2];
-					pc = t[6];
-					pl = t[7];
-					tvol = t[9];
-					tmin = t[11];
-					tmax = t[12];
-					tmed = t[13];
-					eps = t[14];
-					flow = t[17];
-					cs = t[18];
-					pe = Math.round((Number(pc) / Number(eps)) * 100) / 100;
-					name = l18
-						.toString()
-						.replace('ي', 'ی')
-						.replace('ي', 'ی')
-						.replace('ي', 'ی')
-						.replace('ك', 'ک')
-						.replace('ك', 'ک')
-						.replace('ك', 'ک');
+					t = v.split(',');
+					if (t[1].match(/^IR/)) {
+						inscode = t[0];
+						l18 = t[2];
+						pc = t[6];
+						pl = t[7];
+						tvol = t[9];
+						tmin = t[11];
+						tmax = t[12];
+						tmed = t[13];
+						eps = t[14];
+						flow = t[17];
+						cs = t[18];
+						pe = Math.round((Number(pc) / Number(eps)) * 100) / 100;
+						name = l18
+							.toString()
+							.replace('ي', 'ی')
+							.replace('ي', 'ی')
+							.replace('ي', 'ی')
+							.replace('ك', 'ک')
+							.replace('ك', 'ک')
+							.replace('ك', 'ک');
 
-					dbo.collection('allRows').updateOne(
-						{name: name},
-						{
-							$set: {
-								pl: pl,
-								tmin: tmin,
-								tmax: tmax,
-								tmed: tmed,
-								tvol: tvol,
-								pc: pc,
-								l18: l18,
-								inscode: inscode,
-								id: id,
-								pe: pe,
-								esp: eps,
-								date: date,
+						dbo.collection('allRows').updateOne(
+							{name: name},
+							{
+								$set: {
+									pl: pl,
+									tmin: tmin,
+									tmax: tmax,
+									tmed: tmed,
+									tvol: tvol,
+									pc: pc,
+									l18: l18,
+									inscode: inscode,
+									id: id,
+									pe: pe,
+									esp: eps,
+									date: date,
+								},
 							},
-						},
-					);
+						);
 
-					marketInitDone = 1;
+						marketInitDone = 1;
+					} else {
+						inscode = t[0];
+
+						if (t[1] == 1) {
+							qo1 = t[5]; //gh kharid
+							po1 = t[6]; //gh forush
+
+							qd1 = t[7]; //hajm kharid
+							pd1 = t[8]; //hajm forush
+
+							await dbo.collection('allRows').updateOne(
+								{inscode: inscode},
+								{
+									$set: {
+										qo1: qo1, //gh kharid
+										po1: po1, //gh forush
+										qd1: qd1, //hajm kharid
+										pd1: pd1, //hajm forush
+									},
+								},
+							);
+						} else if (t[1] == 2) {
+							qo2 = t[5]; //gh kharid
+							po2 = t[6]; //gh forush
+
+							qd2 = t[7]; //hajm kharid
+							pd2 = t[8]; //hajm forush
+
+							await dbo.collection('allRows').updateOne(
+								{inscode: inscode},
+								{
+									$set: {
+										qo2: qo2, //gh kharid
+										po2: po2, //gh forush
+										qd2: qd2, //hajm kharid
+										pd2: pd2, //hajm forush
+									},
+								},
+							);
+						} else if (t[1] == 3) {
+							qo3 = t[5]; //gh kharid
+							po3 = t[6]; //gh forush
+
+							qd3 = t[7]; //hajm kharid
+							pd3 = t[8]; //hajm forush
+
+							await dbo.collection('allRows').updateOne(
+								{inscode: inscode},
+								{
+									$set: {
+										qo3: qo3, //gh kharid
+										po3: po3, //gh forush
+										qd3: qd3, //hajm kharid
+										pd3: pd3, //hajm forush
+									},
+								},
+							);
+						}
+					}
 				});
 				console.log('marketInitDone1 = ', marketInitDone);
 				res(1);
@@ -1574,36 +1582,38 @@ async function InitDbAndAllRows(dbo) {
 }
 
 let id = 2323;
-MongoClient.connect(
-	mongoUrl,
-	(err, client) => {
-		console.log('err1 = ', err);
-		var dbo = client.db('filterbo_database');
-		dbo.createCollection('allRows', async (err, res) => {
-			await InitDbAndAllRows(dbo);
-			for (i = 0; i < 10; i++) {
-				console.log('round = ', i);
-				await GetBody(dbo, id);
-				bodyCalls.forEach(v => {
-					if (v) v.cancel();
-				});
-				console.log('bodyDone');
-				await GetMarketInit(dbo, id);
-				console.log('marketInitDone3 = ', marketInitDone);
-				await GetPClosingHist(dbo, id);
-				pClosingHistCalls.forEach(v => {
-					if (v) v.cancel();
-				});
-				console.log('GetPClosingHistDone');
-				await GetClientType(dbo, id);
-				clientTypeHistCalls.forEach(v => {
-					if (v) v.cancel();
-				});
-				console.log('GetClientTypeDone');
-			}
-		});
-	},
-);
+if (local == 'POPULATE_DB') {
+	MongoClient.connect(
+		mongoUrl,
+		(err, client) => {
+			console.log('err1 = ', err);
+			dbo = client.db('filterbo_database');
+			dbo.createCollection('allRows', async (err, res) => {
+				await InitDbAndAllRows(dbo);
+				for (i = 0; i < 3; i++) {
+					console.log('round = ', i);
+					//await GetBody(dbo, id);
+					bodyCalls.forEach(v => {
+						if (v) v.cancel();
+					});
+					console.log('bodyDone');
+					await GetMarketInit(dbo, id);
+					console.log('marketInitDone3 = ', marketInitDone);
+					await GetPClosingHist(dbo, id);
+					pClosingHistCalls.forEach(v => {
+						if (v) v.cancel();
+					});
+					console.log('GetPClosingHistDone');
+					await GetClientType(dbo, id);
+					clientTypeHistCalls.forEach(v => {
+						if (v) v.cancel();
+					});
+					console.log('GetClientTypeDone');
+				}
+			});
+		},
+	);
+}
 
 const express = require('express');
 const app = express();
@@ -1673,24 +1683,26 @@ function FindPClosing(res, nam) {
 	);
 }
 
-app.get('/:name', (req, res) => {
-	//FindPClosing(res, req.params.name);
+if (local == 'SERVER') {
+	app.get('/:name', async (req, res) => {
+		//FindPClosing(res, req.params.name);
 
-	MongoClient.connect(
-		mongoUrl,
-		async (err, client) => {
-			var dbo = client.db('filterbo_database');
-			var row = await dbo
-				.collection('allRows')
-				.find({name: req.params.name})
-				.toArray();
-			res.send(row);
-		},
-	);
-});
+		MongoClient.connect(
+			mongoUrl,
+			async (err, client) => {
+				var dbo = client.db('filterbo_database');
+				var row = await dbo
+					.collection('allRows')
+					.find({name: req.params.name})
+					.toArray();
+				res.send(row);
+			},
+		);
+	});
 
-app.get('/portfo', (req, res) => {
-	res.sendFile(__dirname + '/portfo/index.html');
-});
+	//app.get('/portfo', (req, res) => {
+	//	res.sendFile(__dirname + '/portfo/index.html');
+	//});
 
-app.listen(port, () => console.log(`Example app listening on port ${port}!`));
+	app.listen(port, () => console.log(`Example app listening on port ${port}!`));
+}
