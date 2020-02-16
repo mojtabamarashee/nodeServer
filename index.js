@@ -1203,7 +1203,7 @@ function GetMarketInit(dbo, id) {
 				res(1);
 			})
 			.catch(error => {
-				console.log('error = ', error);
+				console.log('error = ', error.code);
 				marketInitDone = 0;
 				console.log('marketInitDone2 = ', marketInitDone);
 				errorCntr++;
@@ -1212,6 +1212,7 @@ function GetMarketInit(dbo, id) {
 	});
 }
 
+clientTypeHistCalls = [];
 function GetClientType(dbo, id) {
 	return new Promise(async (res, rej) => {
 		setTimeout(() => {
@@ -1229,10 +1230,10 @@ function GetClientType(dbo, id) {
 			let ind = allRows.findIndex((v1, i1) => v1.name == v.name);
 			if (v.name.match(/^([^0-9]*)$/) && !allRows[ind].ctHist) {
 				url = 'http://tsetmc.com/tsev2/data/clienttype.aspx?i=' + v.inscode;
-				ctSendCntr++;
+				clientTypeHistCalls[ctSendCntr] = axios.CancelToken.source();
 				//console.log('ctSendCntr = ', ctSendCntr);
 				axios
-					.get(url)
+					.get(url, {cancelToken: clientTypeHistCalls[ctSendCntr].token})
 					.then(response => {
 						ctRecvCntr++;
 						//console.log('ctRecvCntr = ', ctRecvCntr);
@@ -1254,10 +1255,15 @@ function GetClientType(dbo, id) {
 							res(1);
 						}
 					});
+				ctSendCntr++;
 			} else {
 				//console.log('histExist = ', i);
 			}
 		});
+		if (ctSendCntr == ctRecvCntr) {
+			console.log('clientTypeHist already Done');
+			res(1);
+		}
 	});
 }
 
@@ -1340,6 +1346,7 @@ async function GetBodyValues(body, v, dbo) {
 	}
 }
 
+bodyCalls = [];
 function GetBody(dbo, id) {
 	return new Promise(async (res, rej) => {
 		setTimeout(() => {
@@ -1356,20 +1363,14 @@ function GetBody(dbo, id) {
 			let ind = allRows.findIndex((v1, i1) => v1.name == v.name);
 			if (v.name.match(/^([^0-9]*)$/) && allRows[ind].body != 1) {
 				url = 'http://tsetmc.com//loader.aspx?ParTree=151311&i=' + v.inscode;
-				bodySendCntr++;
+				bodyCalls[bodySendCntr] = axios.CancelToken.source();
 				axios
-					.get(url)
+					.get(url, {cancelToken: bodyCalls[bodySendCntr].token})
 					.then(response => {
 						bodyRecvCntr++;
 						console.log('bodyOk = ', bodyRecvCntr);
 						allRows[ind].body = 1;
 						GetBodyValues(response.data, v, dbo);
-						//var row = dbo
-						//  .collection('allRows')
-						//  .updateOne(
-						//    {name: v.name},
-						//    {$set: {vHist: vHist, pClosingHist: pClosingHist}},
-						//  );
 						if (bodyRecvCntr == bodySendCntr) {
 							console.log('bodySendCntr = ', bodySendCntr);
 							console.log('bodyRecvCntr = ', bodyRecvCntr);
@@ -1386,11 +1387,17 @@ function GetBody(dbo, id) {
 						}
 						console.log('bodyError = ', err.code);
 					});
+				bodySendCntr++;
 			}
 		});
+		if (bodySendCntr == bodyRecvCntr) {
+			console.log('body already Done');
+			res(1);
+		}
 	});
 }
 
+pClosingHistCalls = [];
 function GetPClosingHist(dbo, id) {
 	return new Promise(async (res, rej) => {
 		setTimeout(() => {
@@ -1408,9 +1415,9 @@ function GetPClosingHist(dbo, id) {
 				//        console.log("v = ", v);
 				if (v.name.match(/^([^0-9]*)$/) && !allRows[ind].pClosingHist) {
 					url = 'http://tsetmc.com/tsev2/chart/data/Financial.aspx?i=' + v.inscode + '&t=ph&a=1';
-					pClosingSendCntr++;
+					pClosingHistCalls[pClosingSendCntr] = axios.CancelToken.source();
 					axios
-						.get(url, {name: 'test'}, {timeout: 60})
+						.get(url, {cancelToken: pClosingHistCalls[pClosingSendCntr].token})
 						.then(response => {
 							pClosingRecvCntr++;
 							console.log('pclosingOk = ', pClosingRecvCntr);
@@ -1449,9 +1456,15 @@ function GetPClosingHist(dbo, id) {
 								res(1);
 							}
 						});
+					pClosingSendCntr++;
 				}
 			}
 		});
+
+		if (pClosingSendCntr == pClosingRecvCntr) {
+			console.log('pClosingHist already Done');
+			res(1);
+		}
 	});
 }
 
@@ -1570,15 +1583,22 @@ MongoClient.connect(
 			await InitDbAndAllRows(dbo);
 			for (i = 0; i < 10; i++) {
 				console.log('round = ', i);
-				console.log('round = ', i);
-				console.log('round = ', i);
 				await GetBody(dbo, id);
+				bodyCalls.forEach(v => {
+					if (v) v.cancel();
+				});
 				console.log('bodyDone');
 				await GetMarketInit(dbo, id);
 				console.log('marketInitDone3 = ', marketInitDone);
 				await GetPClosingHist(dbo, id);
+				pClosingHistCalls.forEach(v => {
+					if (v) v.cancel();
+				});
 				console.log('GetPClosingHistDone');
 				await GetClientType(dbo, id);
+				clientTypeHistCalls.forEach(v => {
+					if (v) v.cancel();
+				});
 				console.log('GetClientTypeDone');
 			}
 		});
