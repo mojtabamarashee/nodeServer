@@ -1035,6 +1035,16 @@ instAll = [
 ];
 //start
 
+typicalHeader = {
+	Accept: '*/*',
+	'Accept-Encoding': 'gzip, deflate',
+	'Accept-Language': 'en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6,ar;q=0.5,sd;q=0.4',
+	Connection: 'keep-alive',
+	Host: 'www.tsetmc.com',
+	Referer: 'http://www.tsetmc.com/Loader.aspx?ParTree=15131F',
+	'User-Agent':
+		'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36',
+};
 let out = '';
 const axios = require('axios');
 
@@ -1078,10 +1088,10 @@ function GetDate() {
 	mon = d.jm;
 	day = d.jd;
 	out = {year: year, mon: mon, day: day, hour: hour, min: min, sec: sec};
-	console.log('out = ', out);
 
 	return out;
 }
+
 function GetMarketInit(dbo, id) {
 	return new Promise(async (res, rej) => {
 		let url = 'http://www.tsetmc.com/tsev2/data/MarketWatchInit.aspx?h=0&r=0';
@@ -1089,16 +1099,7 @@ function GetMarketInit(dbo, id) {
 		date = GetDate();
 		axios
 			.get(url, {
-				headers: {
-					Accept: '*/*',
-					'Accept-Encoding': 'gzip, deflate',
-					'Accept-Language': 'en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6,ar;q=0.5,sd;q=0.4',
-					Connection: 'keep-alive',
-					Host: 'www.tsetmc.com',
-					Referer: 'http://www.tsetmc.com/Loader.aspx?ParTree=15131F',
-					'User-Agent':
-						'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36',
-				},
+				headers: typicalHeader,
 			})
 			.then(async response => {
 				await response.data.split(';').map(async (v, i) => {
@@ -1220,6 +1221,93 @@ function GetMarketInit(dbo, id) {
 	});
 }
 
+function GetParTree(dbo, id) {
+	return new Promise(async (res, rej) => {
+		let url = 'http://www.tsetmc.com/Loader.aspx?ParTree=15';
+		let error = 1;
+		date = GetDate();
+		axios
+			.get(url, {
+				headers: typicalHeader,
+			})
+			.then(async response => {
+				let str = response.data;
+				let reg = /<td>ارزش معاملات<\/td>([^<]+?).*?title="(.*?)"/g;
+
+				match = reg.exec(str);
+				arzeshBourse = match[2];
+                console.log("arzeshBourse = ", arzeshBourse);
+				match = reg.exec(str);
+				arzeshFara = match[2];
+                console.log("arzeshFara = ", arzeshFara);
+				parTreeDone = 1;
+				//await dbo.collection('allRows').insertOne({a});
+				res(1);
+			})
+			.catch(error => {
+				console.log('parTree error = ', error.code);
+				parTreeDoneDone = 0;
+				errorCntr++;
+				res(1);
+			});
+	});
+}
+
+function GetClientTypeAll(dbo, id) {
+	return new Promise(async (res, rej) => {
+		let url = 'http://www.tsetmc.com/tsev2/data/ClientTypeAll.aspx';
+		let error = 1;
+		date = GetDate();
+		axios
+			.get(url, {
+				headers: typicalHeader,
+			})
+			.then(async response => {
+				response.data.split(';').map(async (v, i) => {
+					clientTypeAllDone = 1;
+					t = v.split(',');
+					let inscode = t[0];
+					let cntr = 1;
+					Buy_CountI = t[cntr++];
+					Buy_CountN = t[cntr++];
+					Buy_I_Volume = t[cntr++];
+					Buy_N_Volume = t[cntr++];
+
+					Sell_CountI = t[cntr++];
+					Sell_CountN = t[cntr++];
+					Sell_I_Volume = t[cntr++];
+					Sell_N_Volume = t[cntr++];
+
+					await dbo.collection('allRows').updateOne(
+						{inscode: inscode},
+						{
+							$set: {
+								Buy_CountI,
+								Buy_CountN,
+								Buy_I_Volume,
+								Buy_N_Volume,
+
+								Sell_CountI,
+								Sell_CountN,
+								Sell_I_Volume,
+								Sell_N_Volume,
+							},
+						},
+					);
+				});
+				console.log('ClientTypeAllDone1 = ', clientTypeAllDone);
+				res(1);
+			})
+			.catch(error => {
+				console.log('error = ', error.code);
+				clientTypeAllDone = 0;
+				console.log('ClientTypeAllDone = ', clientTypeAllDone);
+				errorCntr++;
+				res(1);
+			});
+	});
+}
+
 clientTypeHistCalls = [];
 function GetClientType(dbo, id) {
 	return new Promise(async (res, rej) => {
@@ -1327,14 +1415,6 @@ async function GetBodyValues(body, v, dbo) {
 		} else {
 			color = 'black';
 		}
-		//allRows.forEach((v, i) => {
-		//  index = insCode.findIndex(v1 => v1 == v.inscode);
-		//  allRows[i].floatVal = floatVal[index];
-		//  allRows[i].totalVol = totalVol[index];
-		//  allRows[i].sectorPE = sectorPE[index];
-		//  allRows[i].csName = csName[index];
-		//  allRows[i].color = color[index];
-		//});,
 
 		await dbo.collection('allRows').updateOne(
 			{name: v.name},
@@ -1523,41 +1603,6 @@ function GetPClosing() {
 	});
 }
 
-//async function main() {
-//  async function GetSymbolPage() {
-//    let HistPr = new Promise((res, rej) => {
-//      instAll
-//        .filter((v, i) => i < 100)
-//        .forEach((v, i) => {
-//          url = 'http://www.tsetmc.com/loader.aspx?ParTree=151311&i=' + v;
-//          histSendCntr++;
-//          axios
-//            .get(url)
-//            .then(response => {
-//              histRecvCntr++;
-//              if (histRecvCntr == histSendCntr) {
-//                res(1);
-//              }
-//              let body = response.data;
-//
-//              var regex = /LSecVal='(.*?)',Cg/g;
-//              match = regex.exec(body);
-//              csName = match[1];
-//            })
-//            .catch(error => {
-//              histRecvCntr++;
-//              if (histRecvCntr == histSendCntr) {
-//                res(1);
-//              }
-//            });
-//        });
-//    });
-//
-//    await HistPr;
-//  }
-//  //GetSymbolPage();
-//}
-
 async function InitDbAndAllRows(dbo) {
 	return new Promise(async (res, rej) => {
 		allRows = [];
@@ -1585,31 +1630,36 @@ let id = 2323;
 if (local == 'POPULATE_DB') {
 	MongoClient.connect(
 		mongoUrl,
-		(err, client) => {
-			console.log('err1 = ', err);
+		{useUnifiedTopology: true},
+		async (err, client) => {
 			dbo = client.db('filterbo_database');
-			dbo.createCollection('allRows', async (err, res) => {
-				await InitDbAndAllRows(dbo);
-				for (i = 0; i < 3; i++) {
+			//console.log('stat = ', dbo.s);
+			await InitDbAndAllRows(dbo);
+			await dbo.createCollection('allRows', async (err, res) => {
+				for (i = 0; i < 1; i++) {
 					console.log('round = ', i);
 					//await GetBody(dbo, id);
 					bodyCalls.forEach(v => {
 						if (v) v.cancel();
 					});
 					console.log('bodyDone');
-					await GetMarketInit(dbo, id);
+					//await GetMarketInit(dbo, id);
+					await GetClientTypeAll(dbo, id);
 					console.log('marketInitDone3 = ', marketInitDone);
-					await GetPClosingHist(dbo, id);
+					//await GetPClosingHist(dbo, id);
 					pClosingHistCalls.forEach(v => {
 						if (v) v.cancel();
 					});
 					console.log('GetPClosingHistDone');
-					await GetClientType(dbo, id);
+					//await GetClientType(dbo, id);
 					clientTypeHistCalls.forEach(v => {
 						if (v) v.cancel();
 					});
-					console.log('GetClientTypeDone');
+					console.log('GetClientTypeHistDone');
+
+					GetParTree();
 				}
+				setTimeout(() => client.close(), 2000);
 			});
 		},
 	);
@@ -1619,71 +1669,29 @@ const express = require('express');
 const app = express();
 const port = 3012;
 app.use(express.static('.'));
-app.get('/', (req, res) => {
-	//MongoClient.connect(
-	//	url,
-	//	(err, client) => {
-	//		globalCntr++;
-	//		dbo = client.db('filterbo_database');
-	//		dbo.collection('allRows')
-	//			.find({})
-	//			.toArray((err, row) => {
-	//				if (err) {
-	//					res.send('error');
-	//					throw err;
-	//				}
-	//				res.sendFile('index.html');
-	//				//db.close();
-	//			});
-	//	},
-	//);
-	res.sendFile(__dirname + '/index.html');
-});
-
-var http = require('http');
-var options = {
-	host: 'www.tsetmc.com',
-	path: '/Loader.aspx?ParTree=15131F',
-};
-
-//var req = http.get(options, function(res) {
-//	console.log('STATUS: ' + res.statusCode);
-//	console.log('HEADERS: ' + JSON.stringify(res.headers));
-//
-//	// Buffer the body entirely for processing as a whole.
-//	var bodyChunks = [];
-//	res.on('data', function(chunk) {
-//		// You can process streamed parts here...
-//		bodyChunks.push(chunk);
-//	}).on('end', function() {
-//		var body = Buffer.concat(bodyChunks);
-//		console.log('BODY: ' + body);
-//		// ...and/or process the entire body here.
-//	});
-//});
-
-//req.on('error', function(e) {
-//	console.log('ERROR1: ' + e.message);
-//});
-
-function FindPClosing(res, nam) {
-	//let p = {};
-	//let row = allRows.find(({name}) => name == nam);
-	//row ? (p = row) : (p = {pl: -1});
-	//return JSON.stringify(p);
-
-	MongoClient.connect(
-		mongoUrl,
-		async (err, client) => {
-			//	console.log('err1 = ', err);
-			var dbo = client.db('filterbo_database');
-			//	var row = await dbo.collection('allRows').find({name: nam});
-			//		res.send((row));
-		},
-	);
-}
 
 if (local == 'SERVER') {
+	app.get('/', (req, res) => {
+		//MongoClient.connect(
+		//	url,
+		//	(err, client) => {
+		//		globalCntr++;
+		//		dbo = client.db('filterbo_database');
+		//		dbo.collection('allRows')
+		//			.find({})
+		//			.toArray((err, row) => {
+		//				if (err) {
+		//					res.send('error');
+		//					throw err;
+		//				}
+		//				res.sendFile('index.html');
+		//				//db.close();
+		//			});
+		//	},
+		//);
+		res.sendFile(__dirname + '/index.html');
+	});
+
 	app.get('/:name', async (req, res) => {
 		//FindPClosing(res, req.params.name);
 
