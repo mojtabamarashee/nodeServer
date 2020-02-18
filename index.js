@@ -1,15 +1,91 @@
-let local = 'POPULATE_DB';
+let mode = 'SERVER';
 var jalaali = require('jalaali-js');
-const Http = require('http'),
-	fs = require('fs'),
-	path = require('path'),
-	readline = require('readline'),
-	os = require('os');
+const Http = require('http');
+fs = require('fs');
+path = require('path');
+readline = require('readline');
+os = require('os');
+//var numeral = require('numeral');
+const express = require('express');
+var MongoClient = require('mongodb').MongoClient;
 
+//gloabl
 marketInitError = 1;
 marketInitDone = 0;
 pClosingError = 1;
 pClosingDone = 0;
+const port = 3012;
+const app = express();
+app.use(express.static('.'));
+let dbo, client;
+
+async function main() {
+	if (mode == 'LOCAL') mongoUrl = 'mongodb://localhost:27017';
+	if (mode == 'SERVER') mongoUrl = 'mongodb://filterbo_database:11111aaaaa@localhost:27017/filterbo_database';
+	if (mode == 'POPULATE_DB')
+		mongoUrl = 'mongodb://filterbo_database:11111aaaaa@filterbourse.ir:27017/filterbo_database';
+
+	await ConnectToDB();
+	if (mode == 'POPULATE_DB') {
+		await InitDbAndAllRows(dbo);
+		await dbo.createCollection('allRows', async (err, res) => {});
+
+		let id = 1;
+		for (i = 0; i < 1; i++) {
+			console.log('round = ', i);
+			GetParTree();
+			//await GetBody(dbo, id);
+			bodyCalls.forEach(v => {
+				if (v) v.cancel();
+			});
+			console.log('bodyDone');
+			await GetMarketInit(dbo, id);
+			await GetClientTypeAll(dbo, id);
+			console.log('marketInitDone3 = ', marketInitDone);
+		//	await GetPClosingHist(dbo, id);
+			pClosingHistCalls.forEach(v => {
+				if (v) v.cancel();
+			});
+			console.log('GetPClosingHistDone');
+		//	await GetClientType(dbo, id);
+			clientTypeHistCalls.forEach(v => {
+				if (v) v.cancel();
+			});
+			console.log('GetClientTypeHistDone');
+
+		}
+		setTimeout(() => {
+			try {
+				client.close();
+			} catch (e) {}
+		}, 2000);
+	} else if (mode == 'SERVER') {
+		app.get('/t', (req, res) => {
+			res.sendFile(__dirname + '/main/index.html');
+		});
+
+		app.get('/parTree', async (req, res) => {
+			var row = await dbo
+				.collection('allRows')
+				.find({arzeshBourse: {$exists: true}})
+			res.send(row);
+		});
+
+		app.get('/:name', async (req, res) => {
+			var row = await dbo
+				.collection('allRows')
+				.find({name: req.params.name})
+				.toArray();
+			res.send(row);
+		});
+		//app.get('/portfo', (req, res) => {
+		//	res.sendFile(__dirname + '/portfo/index.html');
+		//});
+
+		app.listen(port, () => console.log(`Example app listening on port ${port}!`));
+	}
+}
+main();
 
 instAll = [
 	{inscode: '38568786927478796', name: 'شیراز'},
@@ -1055,13 +1131,6 @@ bodySendCntr = 0;
 bodyRecvCntr = 0;
 histError = 0;
 
-var MongoClient = require('mongodb').MongoClient;
-let dbo;
-
-if (local == 'LOCAL') mongoUrl = 'mongodb://localhost:27017';
-if (local == 'SERVER') mongoUrl = 'mongodb://filterbo_database:11111aaaaa@localhost:27017/filterbo_database';
-if (local == 'POPULATE_DB') mongoUrl = 'mongodb://filterbo_database:11111aaaaa@filterbourse.ir:27017/filterbo_database';
-
 let url = 'mongodb://filterbo_database:11111aaaaa@localhost:27017/filterbo_database';
 
 let globalCntr = 0;
@@ -1221,7 +1290,7 @@ function GetMarketInit(dbo, id) {
 	});
 }
 
-function GetParTree(dbo, id) {
+function GetParTree(id) {
 	return new Promise(async (res, rej) => {
 		let url = 'http://www.tsetmc.com/Loader.aspx?ParTree=15';
 		let error = 1;
@@ -1235,17 +1304,17 @@ function GetParTree(dbo, id) {
 				let reg = /<td>ارزش معاملات<\/td>([^<]+?).*?title="(.*?)"/g;
 
 				match = reg.exec(str);
-				arzeshBourse = match[2];
-                console.log("arzeshBourse = ", arzeshBourse);
+				arzeshBourse = Number(match[2].replace(/,/g, '')) / 1e10;
+				console.log('arzeshBourse = ', arzeshBourse);
 				match = reg.exec(str);
-				arzeshFara = match[2];
-                console.log("arzeshFara = ", arzeshFara);
+				arzeshFara = Number(match[2].replace(/,/g, '')) / 10;
+				console.log('arzeshFara = ', arzeshFara);
 				parTreeDone = 1;
-				//await dbo.collection('allRows').insertOne({a});
+				await dbo.collection('allRows').insertOne({arzeshBourse:arzeshBourse, arzeshFara:arzeshFara});
 				res(1);
 			})
 			.catch(error => {
-				console.log('parTree error = ', error.code);
+				console.log('parTree error = ', error);
 				parTreeDoneDone = 0;
 				errorCntr++;
 				res(1);
@@ -1610,7 +1679,7 @@ async function InitDbAndAllRows(dbo) {
 		try {
 			dbo.collection('allRows').remove({});
 		} catch (e) {
-			//console.log('e = ', e);
+			console.log('e = ', e);
 		}
 		console.log('d1');
 
@@ -1626,91 +1695,16 @@ async function InitDbAndAllRows(dbo) {
 	});
 }
 
-let id = 2323;
-if (local == 'POPULATE_DB') {
-	MongoClient.connect(
-		mongoUrl,
-		{useUnifiedTopology: true},
-		async (err, client) => {
-			dbo = client.db('filterbo_database');
-			//console.log('stat = ', dbo.s);
-			await InitDbAndAllRows(dbo);
-			await dbo.createCollection('allRows', async (err, res) => {
-				for (i = 0; i < 1; i++) {
-					console.log('round = ', i);
-					//await GetBody(dbo, id);
-					bodyCalls.forEach(v => {
-						if (v) v.cancel();
-					});
-					console.log('bodyDone');
-					//await GetMarketInit(dbo, id);
-					await GetClientTypeAll(dbo, id);
-					console.log('marketInitDone3 = ', marketInitDone);
-					//await GetPClosingHist(dbo, id);
-					pClosingHistCalls.forEach(v => {
-						if (v) v.cancel();
-					});
-					console.log('GetPClosingHistDone');
-					//await GetClientType(dbo, id);
-					clientTypeHistCalls.forEach(v => {
-						if (v) v.cancel();
-					});
-					console.log('GetClientTypeHistDone');
-
-					GetParTree();
-				}
-				setTimeout(() => client.close(), 2000);
-			});
-		},
-	);
-}
-
-const express = require('express');
-const app = express();
-const port = 3012;
-app.use(express.static('.'));
-
-if (local == 'SERVER') {
-	app.get('/', (req, res) => {
-		//MongoClient.connect(
-		//	url,
-		//	(err, client) => {
-		//		globalCntr++;
-		//		dbo = client.db('filterbo_database');
-		//		dbo.collection('allRows')
-		//			.find({})
-		//			.toArray((err, row) => {
-		//				if (err) {
-		//					res.send('error');
-		//					throw err;
-		//				}
-		//				res.sendFile('index.html');
-		//				//db.close();
-		//			});
-		//	},
-		//);
-		res.sendFile(__dirname + '/index.html');
-	});
-
-	app.get('/:name', async (req, res) => {
-		//FindPClosing(res, req.params.name);
-
+async function ConnectToDB() {
+	return new Promise((res, rej) => {
 		MongoClient.connect(
 			mongoUrl,
-			async (err, client) => {
-				var dbo = client.db('filterbo_database');
-				var row = await dbo
-					.collection('allRows')
-					.find({name: req.params.name})
-					.toArray();
-				res.send(row);
+			{useUnifiedTopology: true},
+			async (err, clt) => {
+				dbo = await clt.db('filterbo_database');
+				client = clt;
+				res(1);
 			},
 		);
 	});
-
-	//app.get('/portfo', (req, res) => {
-	//	res.sendFile(__dirname + '/portfo/index.html');
-	//});
-
-	app.listen(port, () => console.log(`Example app listening on port ${port}!`));
 }
