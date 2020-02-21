@@ -28,7 +28,9 @@ async function main() {
     mongoUrl =
       'mongodb://filterbo_database:11111aaaaa@filterbourse.ir:27017/filterbo_database';
 
+  console.log('mongoUrl = ', mongoUrl);
   await ConnectToDB();
+  console.log('ConnectToDB = ', ConnectToDB);
   if (mode == 'POPULATE_DB') {
     await InitDbAndAllRows(dbo);
     await dbo.createCollection('allRows', async (err, res) => {});
@@ -64,6 +66,7 @@ async function main() {
       } catch (e) {}
     }, 2000);
   } else if (mode == 'SERVER') {
+    console.log('mode = ', mode);
     //app.get('/', (req, res) => {
     //  res.sendFile(__dirname + '/main/index.html');
     //});
@@ -77,11 +80,12 @@ async function main() {
     //});
 
     app.get('/:name', async (req, res) => {
-    //  var row = await dbo
-    //    .collection('allRows')
-    //    .find({name: req.params.name})
-    //    .toArray();
-      res.send('row');
+      console.log('req = ', req);
+      var row = await dbo
+        .collection('allRows')
+        .find({name: req.params.name})
+        .toArray();
+      res.send(row);
     });
     //app.get('/portfo', (req, res) => {
     //	res.sendFile(__dirname + '/portfo/index.html');
@@ -1760,6 +1764,7 @@ async function InitDbAndAllRows(dbo) {
 }
 
 async function ConnectToDB() {
+  console.log('ConnectToDB = ', ConnectToDB);
   return new Promise((res, rej) => {
     MongoClient.connect(
       mongoUrl,
