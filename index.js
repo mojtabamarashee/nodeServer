@@ -80,12 +80,12 @@ async function main() {
     //});
 
     app.get('/:name', async (req, res) => {
-      console.log('req = ', req);
-      var row = await dbo
-        .collection('allRows')
-        .find({name: req.params.name})
-        .toArray();
-      res.send(row);
+      //console.log('req = ', req);
+      //var row = await dbo
+      //  .collection('allRows')
+      //  .find({name: req.params.name})
+      //  .toArray();
+      res.send('row');
     });
     //app.get('/portfo', (req, res) => {
     //	res.sendFile(__dirname + '/portfo/index.html');
