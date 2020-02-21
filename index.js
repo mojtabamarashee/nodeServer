@@ -1,4 +1,4 @@
-let mode = 'POPULATE_DB';
+let mode = 'SERVER';
 var jalaali = require('jalaali-js');
 const Http = require('http');
 fs = require('fs');
@@ -64,24 +64,24 @@ async function main() {
       } catch (e) {}
     }, 2000);
   } else if (mode == 'SERVER') {
-    app.get('/', (req, res) => {
-      res.sendFile(__dirname + '/main/index.html');
-    });
+    //app.get('/', (req, res) => {
+    //  res.sendFile(__dirname + '/main/index.html');
+    //});
 
-    app.get('/parTree', async (req, res) => {
-      var row = await dbo
-        .collection('allRows')
-        .find({arzeshBourse: {$exists: true}})
-        .toArray();
-      res.send({arzesh: row[0].arzeshBourse + row[0].arzeshFara});
-    });
+    //app.get('/parTree', async (req, res) => {
+    //  //var row = await dbo
+    //  //  .collection('allRows')
+    //  //  .find({arzeshBourse: {$exists: true}})
+    //  //  .toArray();
+    //  res.send({arzesh: row[0].arzeshBourse + row[0].arzeshFara});
+    //});
 
     app.get('/:name', async (req, res) => {
-      var row = await dbo
-        .collection('allRows')
-        .find({symbols: {name: req.params.name}})
-        .toArray();
-      res.send(row);
+    //  var row = await dbo
+    //    .collection('allRows')
+    //    .find({name: req.params.name})
+    //    .toArray();
+      res.send('row');
     });
     //app.get('/portfo', (req, res) => {
     //	res.sendFile(__dirname + '/portfo/index.html');
@@ -1175,11 +1175,11 @@ function GetMarketInit(dbo, id) {
     let url = 'http://www.tsetmc.com/tsev2/data/MarketWatchInit.aspx?h=0&r=0';
     let error = 1;
 
-    let t = await dbo
-      .collection('allRows')
-      .find({symbols: {$exists: true}})
-      .toArray();
-    symbols = t[0].symbols;
+    //let t = await dbo
+    //  .collection('allRows')
+    //  .find({symbols: {$exists: true}})
+    //  .toArray();
+    //symbols = t[0].symbols;
 
     date = GetDate();
     axios
@@ -1187,7 +1187,7 @@ function GetMarketInit(dbo, id) {
         headers: typicalHeader,
       })
       .then(async response => {
-        response.data.split(';').map((v, i) => {
+        response.data.split(';').map(async (v, i) => {
           successCntr++;
           t = v.split(',');
           if (t[1].match(/^IR/)) {
@@ -1212,45 +1212,45 @@ function GetMarketInit(dbo, id) {
               .replace('ك', 'ک')
               .replace('ك', 'ک');
 
-            index = symbols.findIndex(v1 => (v1.name = name));
+            //index = symbols.findIndex(v1 => (v1.name = name));
 
-            symbols[index].pl = pl;
-            symbols[index].tmin = tmin;
-            symbols[index].tmax = tmax;
-            symbols[index].tmed = tmed;
-            symbols[index].tvol = tvol;
-            symbols[index].pc = pc;
-            symbols[index].l18 = l18;
-            symbols[index].inscode = inscode;
-            symbols[index].id = id;
-            symbols[index].pe = pe;
-            symbols[index].esp = eps;
-            symbols[index].date = date;
+            pl = pl;
+            tmin = tmin;
+            tmax = tmax;
+            tmed = tmed;
+            tvol = tvol;
+            pc = pc;
+            l18 = l18;
+            inscode = inscode;
+            id = id;
+            pe = pe;
+            esp = eps;
+            date = date;
 
-            //dbo.collection('allRows').updateOne(
-            //	{_id: 'symbols'},
-            //	{
-            //		$set: {
-            //			pl: pl,
-            //			tmin: tmin,
-            //			tmax: tmax,
-            //			tmed: tmed,
-            //			tvol: tvol,
-            //			pc: pc,
-            //			l18: l18,
-            //			inscode: inscode,
-            //			id: id,
-            //			pe: pe,
-            //			esp: eps,
-            //			date: date,
-            //		},
-            //	},
-            //);
+            dbo.collection('allRows').updateOne(
+              {name: name},
+              {
+                $set: {
+                  pl: pl,
+                  tmin: tmin,
+                  tmax: tmax,
+                  tmed: tmed,
+                  tvol: tvol,
+                  pc: pc,
+                  l18: l18,
+                  inscode: inscode,
+                  id: id,
+                  pe: pe,
+                  esp: eps,
+                  date: date,
+                },
+              },
+            );
 
             marketInitDone = 1;
           } else {
             inscode = t[0];
-            index = symbols.findIndex(v1 => (v1.inscode = inscode));
+            //index = symbols.findIndex(v1 => (v1.inscode = inscode));
 
             if (t[1] == 1) {
               qo1 = t[5]; //gh kharid
@@ -1259,22 +1259,17 @@ function GetMarketInit(dbo, id) {
               qd1 = t[7]; //hajm kharid
               pd1 = t[8]; //hajm forush
 
-              symbols[index].qo1 = qo1; //gh kharid
-              symbols[index].po1 = po1; //gh forush
-              symbols[index].qd1 = qd1; //hajm kharid
-              symbols[index].pd1 = pd1; //hajm forush
-
-              //await dbo.collection('allRows').updateOne(
-              //	{symbols: {inscode: inscode}},
-              //	{
-              //		$set: {
-              //			qo1: qo1, //gh kharid
-              //			po1: po1, //gh forush
-              //			qd1: qd1, //hajm kharid
-              //			pd1: pd1, //hajm forush
-              //		},
-              //	},
-              //);
+              await dbo.collection('allRows').updateOne(
+                {inscode: inscode},
+                {
+                  $set: {
+                    qo1: qo1, //gh kharid
+                    po1: po1, //gh forush
+                    qd1: qd1, //hajm kharid
+                    pd1: pd1, //hajm forush
+                  },
+                },
+              );
             } else if (t[1] == 2) {
               qo2 = t[5]; //gh kharid
               po2 = t[6]; //gh forush
@@ -1282,22 +1277,17 @@ function GetMarketInit(dbo, id) {
               qd2 = t[7]; //hajm kharid
               pd2 = t[8]; //hajm forush
 
-              symbols[index].qo2 = qo2; //gh kharid
-              symbols[index].po2 = po2; //gh forush
-              symbols[index].qd2 = qd2; //hajm kharid
-              symbols[index].pd2 = pd2; //hajm forush
-
-              ///await dbo.collection('allRows').updateOne(
-              ///	{inscode: inscode},
-              ///	{
-              ///		$set: {
-              ///			qo2: qo2, //gh kharid
-              ///			po2: po2, //gh forush
-              ///			qd2: qd2, //hajm kharid
-              ///			pd2: pd2, //hajm forush
-              ///		},
-              ///	},
-              ///);
+              await dbo.collection('allRows').updateOne(
+                {inscode: inscode},
+                {
+                  $set: {
+                    qo2: qo2, //gh kharid
+                    po2: po2, //gh forush
+                    qd2: qd2, //hajm kharid
+                    pd2: pd2, //hajm forush
+                  },
+                },
+              );
             } else if (t[1] == 3) {
               qo3 = t[5]; //gh kharid
               po3 = t[6]; //gh forush
@@ -1305,29 +1295,28 @@ function GetMarketInit(dbo, id) {
               qd3 = t[7]; //hajm kharid
               pd3 = t[8]; //hajm forush
 
-              symbols[index].qo3 = qo3; //gh kharid
-              symbols[index].po3 = po3; //gh forush
-              symbols[index].qd3 = qd3; //hajm kharid
-              symbols[index].pd3 = pd3; //hajm forush
+              qo3 = qo3; //gh kharid
+              po3 = po3; //gh forush
+              qd3 = qd3; //hajm kharid
+              pd3 = pd3; //hajm forush
 
-              //await dbo.collection('allRows').updateOne(
-              //	{inscode: inscode},
-              //	{
-              //		$set: {
-              //			qo3: qo3, //gh kharid
-              //			po3: po3, //gh forush
-              //			qd3: qd3, //hajm kharid
-              //			pd3: pd3, //hajm forush
-              //		},
-              //	},
-              //);
+              await dbo.collection('allRows').updateOne(
+                {inscode: inscode},
+                {
+                  $set: {
+                    qo3: qo3, //gh kharid
+                    po3: po3, //gh forush
+                    qd3: qd3, //hajm kharid
+                    pd3: pd3, //hajm forush
+                  },
+                },
+              );
             }
           }
         });
         console.log('marketInitDone1 = ', marketInitDone);
 
-          console.log("symbols = ", symbols);
-        await dbo.collection('allRows').replaceOne({_id: 'symbols'}, {symbols});
+        //await dbo.collection('allRows').replaceOne({_id: 'symbols'}, {symbols});
 
         res(1);
       })
@@ -1361,13 +1350,11 @@ function GetParTree(id) {
         arzeshFara = Number(match[2].replace(/,/g, ''));
         console.log('arzeshFara = ', arzeshFara);
         parTreeDone = 1;
-        await dbo
-          .collection('allRows')
-          .insertOne({
-            _id: 'bazar',
-            arzeshBourse: arzeshBourse,
-            arzeshFara: arzeshFara,
-          });
+        await dbo.collection('allRows').insertOne({
+          _id: 'bazar',
+          arzeshBourse: arzeshBourse,
+          arzeshFara: arzeshFara,
+        });
         res(1);
       })
       .catch(error => {
@@ -1444,11 +1431,11 @@ function GetClientType(dbo, id) {
       res(1);
     }, 60000);
 
-    let t = await dbo
-      .collection('allRows')
-      .find({symbols: {$exists: true}})
-      .toArray();
-    allRows = t[0].symbols;
+    // let t = await dbo
+    //   .collection('allRows')
+    //   .find({symbols: {$exists: true}})
+    //   .toArray();
+    // allRows = t[0].symbols;
 
     instAll.forEach((v, i) => {
       let ind = allRows.findIndex((v1, i1) => v1.name == v.name);
@@ -1572,11 +1559,11 @@ function GetBody(dbo, id) {
       console.log('bodyRecvCntr = ', bodyRecvCntr);
       res(1);
     }, 60000);
-    let t = await dbo
-      .collection('allRows')
-      .find({symbols: {$exists: true}})
-      .toArray();
-    allRows = t[0].symbols;
+    //let t = await dbo
+    //  .collection('allRows')
+    //  .find({symbols: {$exists: true}})
+    //  .toArray();
+    //allRows = t[0].symbols;
 
     instAll.forEach((v, i) => {
       let ind = allRows.findIndex((v1, i1) => v1.name == v.name);
@@ -1624,11 +1611,11 @@ function GetPClosingHist(dbo, id) {
       console.log('pClosingRecvCntr = ', pClosingRecvCntr);
       res(1);
     }, 60000);
-    let t = await dbo
-      .collection('allRows')
-      .find({symbols: {$exists: true}})
-      .toArray();
-    allRows = t[0].symbols;
+    //let t = await dbo
+    //  .collection('allRows')
+    //  .find({symbols: {$exists: true}})
+    //  .toArray();
+    //allRows = t[0].symbols;
 
     instAll.forEach(async (v, i) => {
       let ind = allRows.findIndex((v1, i1) => v1.name == v.name);
@@ -1761,13 +1748,12 @@ async function InitDbAndAllRows(dbo) {
 
     await dbo.createCollection('allRows');
 
-    instAll.forEach((v, i) => {
+    instAll.forEach(async (v, i) => {
       allRows.push({inscode: v.inscode, name: v.name});
+      await dbo.collection('allRows').insertOne({v});
     });
 
-    await dbo
-      .collection('allRows')
-      .insertOne({_id: 'symbols', symbols: allRows});
+    //await dbo.collection('allRows').insertMany({allRows});
     console.log('init db finished');
     res(1);
   });
