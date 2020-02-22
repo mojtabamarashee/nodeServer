@@ -1,4 +1,4 @@
-let mode = 'SERVER';
+let mode = 'POPULATE_DB';
 var jalaali = require('jalaali-js');
 const Http = require('http');
 fs = require('fs');
@@ -14,7 +14,7 @@ marketInitError = 1;
 marketInitDone = 0;
 pClosingError = 1;
 pClosingDone = 0;
-const port = 3012;
+const port = 52013;
 const app = express();
 app.use(express.static('.'));
 let dbo, client;
@@ -24,13 +24,14 @@ async function main() {
   if (mode == 'SERVER')
     mongoUrl =
       'mongodb://filterbo_database:11111aaaaa@localhost:27017/filterbo_database';
+
+    mongoUrl =
+      'mongodb://filterbo_database:11111aaaaa@filterbourse.ir:27017/filterbo_database';
   if (mode == 'POPULATE_DB')
     mongoUrl =
       'mongodb://filterbo_database:11111aaaaa@filterbourse.ir:27017/filterbo_database';
 
-  console.log('mongoUrl = ', mongoUrl);
   await ConnectToDB();
-  console.log('ConnectToDB = ', ConnectToDB);
   if (mode == 'POPULATE_DB') {
     await InitDbAndAllRows(dbo);
     await dbo.createCollection('allRows', async (err, res) => {});
@@ -39,7 +40,7 @@ async function main() {
     for (i = 0; i < 1; i++) {
       console.log('round = ', i);
       GetParTree();
-      //await GetBody(dbo, id);
+      await GetBody(dbo, id);
       bodyCalls.forEach(v => {
         if (v) v.cancel();
       });
@@ -67,26 +68,38 @@ async function main() {
     }, 2000);
   } else if (mode == 'SERVER') {
     console.log('mode = ', mode);
-    //app.get('/', (req, res) => {
-    //  res.sendFile(__dirname + '/main/index.html');
-    //});
 
-    //app.get('/parTree', async (req, res) => {
-    //  //var row = await dbo
-    //  //  .collection('allRows')
-    //  //  .find({arzeshBourse: {$exists: true}})
-    //  //  .toArray();
+
+    app.get('/:name', async (req, res) => {
+      console.log('req = ', req);
+      var row = await dbo
+        .collection('allRows')
+        .find({name: req.params.name})
+        .toArray();
+      res.send(row);
+    });
+
+
+    app.get('/', (req, res) => {
+      res.sendFile(__dirname + '/main/index.html');
+    });
+
+    app.get('/parTree', async (req, res) => {
+      var row = await dbo
+        .collection('allRows')
+        .find({arzeshBourse: {$exists: true}})
+        .toArray();
+      res.send({arzesh: row[0].arzeshBourse + row[0].arzeshFara});
+    });
+
+    //app.get('/', async (req, res) => {
+    //  var row = await dbo
+    //    .collection('allRows')
+    //    .find({arzeshBourse: {$exists: true}})
+    //    .toArray();
     //  res.send({arzesh: row[0].arzeshBourse + row[0].arzeshFara});
     //});
 
-    app.get('/:name', async (req, res) => {
-      //console.log('req = ', req);
-      //var row = await dbo
-      //  .collection('allRows')
-      //  .find({name: req.params.name})
-      //  .toArray();
-      res.send('row');
-    });
     //app.get('/portfo', (req, res) => {
     //	res.sendFile(__dirname + '/portfo/index.html');
     //});
@@ -1754,7 +1767,7 @@ async function InitDbAndAllRows(dbo) {
 
     instAll.forEach(async (v, i) => {
       allRows.push({inscode: v.inscode, name: v.name});
-      await dbo.collection('allRows').insertOne({v});
+      await dbo.collection('allRows').insertOne(v);
     });
 
     //await dbo.collection('allRows').insertMany({allRows});
@@ -1764,13 +1777,13 @@ async function InitDbAndAllRows(dbo) {
 }
 
 async function ConnectToDB() {
-  console.log('ConnectToDB = ', ConnectToDB);
   return new Promise((res, rej) => {
     MongoClient.connect(
       mongoUrl,
-      {useUnifiedTopology: true},
       async (err, clt) => {
+		console.log('err = ', err);
         dbo = await clt.db('filterbo_database');
+        console.log("dbo = ");
         client = clt;
         res(1);
       },
@@ -1799,3 +1812,10 @@ function GetKhodro() {
       });
     });
 }
+//const express = require('express')
+//const app = express()
+//const port = 30124
+//
+//app.get('/', (req, res) => res.send('Hello World!'))
+//
+//app.listen(port, () => console.log(`Example app listening on port ${port}!`))
