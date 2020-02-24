@@ -1,18 +1,32 @@
 <style>
-
-.line {
-  fill: none;
-  stroke: steelblue;
-  stroke-width: 2px;
-}
-/* Style the dots by assigning a fill and stroke */
-.dot {
+  .line {
+    fill: none;
+    stroke: steelblue;
+    stroke-width: 2px;
+  }
+  /* Style the dots by assigning a fill and stroke */
+  .dot {
     fill: #ffab00;
     stroke: #fff;
-}
+  }
 </style>
 
-<script src='https://cdnjs.cloudflare.com/ajax/libs/d3/5.15.0/d3.min.js'></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.15.0/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"
+/>
+<script
+  src="https://code.jquery.com/jquery-3.4.1.min.js"
+  integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+  crossorigin="anonymous"
+></script>
+<script
+  src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"
+  integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
+  crossorigin="anonymous"
+></script>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script src="symbol/Symbol.js"></script>
 <head>
@@ -20,15 +34,16 @@
 </head>
 <body>
   <div id="root"></div>
-<div class="widget">
-  <h1>Controlgroup</h1>
-  <fieldset>
-    <legend>Rental Car</legend>
-    <div class="controlgroup">
-      <label for="transmission-standard">Standard</label>
-      <input type="radio" name="transmission" id="transmission-standard">
-      <label for="transmission-automatic">Automatic</label>
-      <input type="radio" name="transmission" id="transmission-automatic">
+  <div class="widget">
+    <h1>Controlgroup</h1>
+    <fieldset>
+      <legend>Rental Car</legend>
+      <div class="controlgroup">
+        <label for="transmission-standard">Standard</label>
+        <input type="radio" name="transmission" id="transmission-standard" />
+        <label for="transmission-automatic">Automatic</label>
+        <input type="radio" name="transmission" id="transmission-automatic" />
       </div>
-
+    </fieldset>
+  </div>
 </body>
