@@ -1,8 +1,9 @@
-let mode = 'POPULATE_DB';
+let mode = 'SERVER';
 var jalaali = require('jalaali-js');
 const Http = require('http');
 fs = require('fs');
 path = require('path');
+var compression = require('compression')
 readline = require('readline');
 os = require('os');
 //var numeral = require('numeral');
@@ -16,6 +17,7 @@ pClosingError = 1;
 pClosingDone = 0;
 const port = 52013;
 const app = express();
+app.use(compression())
 app.use(express.static('.'));
 let dbo, client;
 
@@ -33,10 +35,10 @@ async function main() {
 		await dbo.createCollection('allRows', async (err, res) => {});
 
 		let id = 1;
-		for (i = 0; i < 1; i++) {
+		for (i = 0; i < 5; i++) {
 			console.log('round = ', i);
 			GetParTree();
-			//await GetBody(dbo, id);
+			await GetBody(dbo, id);
 			bodyCalls.forEach(v => {
 				if (v) v.cancel();
 			});
@@ -64,6 +66,12 @@ async function main() {
 		}, 2000);
 	} else if (mode == 'SERVER') {
 		console.log('mode = ', mode);
+		html = fs.readFileSync('symbol/index.html');
+
+
+		app.get('/', (req, res) => {
+			res.sendFile(__dirname + '/main/index.html');
+		});
 
 		app.get('/parTree', async (req, res) => {
 			var row = await dbo
@@ -73,17 +81,36 @@ async function main() {
 			res.send({arzesh: row[0].arzeshBourse + row[0].arzeshFara});
 		});
 
-		app.get('/:name', async (req, res) => {
+		app.get('/hist/:inscode', async (req, res) => {
 			console.log('req = ', req);
+			var row = await dbo
+				.collection('allRows')
+				.find({inscode: req.params.inscode})
+				.toArray();
+			res.send(row[0]);
+		});
+
+		app.get('/api/names', async (req, res) => {
+			console.log('req = ', req);
+			var row = await dbo
+				.collection('allRows')
+				.find()
+				.toArray();
+			let names = row.map(v => v.name);
+			res.send(names);
+		});
+
+		app.get('/:name', async (req, res) => {
 			var row = await dbo
 				.collection('allRows')
 				.find({name: req.params.name})
 				.toArray();
-			res.send(row);
-		});
-
-		app.get('/', (req, res) => {
-			res.sendFile(__dirname + '/main/index.html');
+			res.send(
+				'<script>var inscode ="' +
+					row[0].inscode +
+					'"; console.log("inscode = ", inscode);</script>' +
+					html.toString(),
+			);
 		});
 
 		//app.get('/', async (req, res) => {
@@ -1644,14 +1671,13 @@ function GetPClosingHist(dbo, id) {
 								.split(';')
 								.map(v => v.split(','))
 								.map(v => ({
-                                    date : v[0], vol : Number(v[5]), pl : Number(v[6])
+									date: v[0],
+									vol: Number(v[5]),
+									pl: Number(v[6]),
 								}));
 
-
 							allRows[ind].hist = hist;
-							var row = dbo
-								.collection('allRows')
-								.updateOne({name: v.name}, {$set: {hist: hist}});
+							var row = dbo.collection('allRows').updateOne({name: v.name}, {$set: {hist: hist}});
 						})
 						.catch(error => {
 							pClosingRecvCntr++;
