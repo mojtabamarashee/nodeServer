@@ -1,49 +1,84 @@
-<style>
-  .line {
-    fill: none;
-    stroke: steelblue;
-    stroke-width: 2px;
-  }
-  /* Style the dots by assigning a fill and stroke */
-  .dot {
-    fill: #ffab00;
-    stroke: #fff;
-  }
-</style>
+<!DOCTYPE html>
+<html lang="en">
+  <style>
+    .line {
+      fill: none;
+      stroke: steelblue;
+      stroke-width: 2px;
+    }
+    /* Style the dots by assigning a fill and stroke */
+    .dot {
+      fill: #ffab00;
+      stroke: #fff;
+    }
+  </style>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.15.0/d3.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-<link
-  rel="stylesheet"
-  href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"
-/>
-<script
-  src="https://code.jquery.com/jquery-3.4.1.min.js"
-  integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
-  crossorigin="anonymous"
-></script>
-<script
-  src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"
-  integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
-  crossorigin="anonymous"
-></script>
-<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-<script src="symbol/Symbol.js"></script>
-<head>
-  <meta charset="UTF-8" />
-</head>
-<body>
-  <div id="root"></div>
-  <div class="widget">
-    <h1>Controlgroup</h1>
-    <fieldset>
-      <legend>Rental Car</legend>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.15.0/d3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <link
+    rel="stylesheet"
+    href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"
+  />
+  <script
+    src="https://code.jquery.com/jquery-3.4.1.min.js"
+    integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+    crossorigin="anonymous"
+  ></script>
+  <script
+    src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"
+    integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
+    crossorigin="anonymous"
+  ></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="Symbol.js"></script>
+
+  <script>
+    $(function() {
+      $(".controlgroup").controlgroup();
+      $(".controlgroup-vertical").controlgroup({
+        direction: "vertical"
+      });
+    });
+  </script>
+
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <div class="widget">
       <div class="controlgroup">
-        <label for="transmission-standard">Standard</label>
-        <input type="radio" name="transmission" id="transmission-standard" />
-        <label for="transmission-automatic">Automatic</label>
-        <input type="radio" name="transmission" id="transmission-automatic" />
+        <label for="7d" style="font-size:28px" onclick="ChangeDate(7)">7d</label>
+        <input type="radio" name="day" id="7d" />
+
+        <label for="1M" style="font-size:28px">1M</label>
+        <input type="radio" name="day" id="1M" />
+
+        <label for="2M" style="font-size:28px">2M</label>
+        <input type="radio" name="day" id="2M" />
+
+        <label for="1Y" style="font-size:28px">1Y</label>
+        <input type="radio" checked name="day" id="1Y" />
+
+        <label for="All" style="font-size:28px">All</label>
+        <input type="radio" name="day" id="All" />
+
+        <label
+          for="horizontal-spinner"
+          style="font-size:28px;"
+          class="ui-controlgroup-label"
+          >#days</label
+        >
+
+        <input
+          id="horizontal-spinner"
+          style="font-size:28px;width:30px"
+          class="ui-spinner-input"
+        />
+
+        <label for="insurance" style="font-size:22px">تعدیل</label>
+        <input type="checkbox" checked name="insurance" id="insurance" />
       </div>
-    </fieldset>
-  </div>
-</body>
+    </div>
+  </body>
+</html>

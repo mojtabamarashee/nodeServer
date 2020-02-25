@@ -1,14 +1,21 @@
-function Draw(data) {
-	var margin = {top: 20, right: 20, bottom: 30, left: 50},
+interval = 360;
+
+inscode = '318005355896147';
+function Draw(dataa) {
+    let data = []
+    for(i = 0; i < dataa.length; i++)
+    {
+        data[i] = dataa[i];
+    }
+	var margin = {top: 20, right: 50, bottom: 30, left: 80},
 		width = 960 - margin.left - margin.right,
 		height = 500 - margin.top - margin.bottom;
 
-	var parseTime = d3.timeParse('%Y-%m-%d');
+	var parseTime = d3.time.format('%Y-%m-%d');
 
 	var x = d3.scaleTime().range([0, width]);
 	var y = d3.scaleLinear().range([height, 0]);
 
-	// define the line
 	var valueline = d3
 		.line()
 		.x(function(d) {
@@ -18,9 +25,6 @@ function Draw(data) {
 			return y(d.pl);
 		});
 
-	// append the svg obgect to the body of the page
-	// appends a 'group' element to 'svg'
-	// moves the 'group' element to the top left margin
 	var svg = d3
 		.select('body')
 		.append('svg')
@@ -29,17 +33,11 @@ function Draw(data) {
 		.append('g')
 		.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
-	// Get the data
-	//		d3.csv('data.csv', function(error, data) {
-	//	if (error) throw error;
-
-	// format the data
 	data.forEach(function(d) {
 		d.date = parseTime(d.date.slice(0, 4) + '-' + d.date.slice(4, 6) + '-' + d.date.slice(6, 8));
 		d.pl = d.pl;
 	});
 
-	// Scale the range of the data
 	x.domain(
 		d3.extent(data, function(d) {
 			return d.date;
@@ -61,49 +59,67 @@ function Draw(data) {
 	// Add the X Axis
 	svg.append('g')
 		.attr('transform', 'translate(0,' + height + ')')
+		.style('font', '16px times')
 		.call(d3.axisBottom(x));
 
 	// Add the Y Axis
-	svg.append('g').call(d3.axisLeft(y));
+	svg.append('g')
+		.style('font', '16px times')
+		.call(d3.axisLeft(y));
 	//});
 
-	const volData = data.filter(d => d['vol'] !== null && d['vol'] !== 0);
-	const yMinVolume = d3.min(volData, d => {
-		return Math.min(d['volume']);
-	});
-	const yMaxVolume = d3.max(volData, d => {
-		return Math.max(d['volume']);
-	});
-	const yVolumeScale = d3
-		.scaleLinear()
-		.domain([yMinVolume, yMaxVolume])
-		.range([height, 0]);
+	//	const volData = data.filter(d => d['vol'] !== null && d['vol'] !== 0);
+	//	const yMinVolume = d3.min(volData, d => {
+	//		return Math.min(d['volume']);
+	//	});
+	//	const yMaxVolume = d3.max(volData, d => {
+	//		return Math.max(d['volume']);
+	//	});
+	//	const yVolumeScale = d3
+	//		.scaleLinear()
+	//		.domain([yMinVolume, yMaxVolume])
+	//		.range([height, 0]);
+	//
+	//	svg.selectAll()
+	//		.data(volData)
+	//		.enter()
+	//		.append('rect')
+	//		.attr('x', d => {
+	//			return xScale(d['date']);
+	//		})
+	//
+	//		.attr('y', d => {
+	//			return yVolumeScale(d['volume']);
+	//		})
+	//		.attr('fill', (d, i) => {
+	//			if (i === 0) {
+	//				return '#03a678';
+	//			} else {
+	//				return volData[i - 1].close > d.close ? '#c0392b' : '#03a678';
+	//			}
+	//		})
+	//		.attr('width', 1)
+	//		.attr('height', d => {
+	//			return height - yVolumeScale(d['volume']);
+	//		});
+}
 
-	svg.selectAll()
-		.data(volData)
-		.enter()
-		.append('rect')
-		.attr('x', d => {
-			return xScale(d['date']);
-		})
-
-		.attr('y', d => {
-			return yVolumeScale(d['volume']);
-		})
-		.attr('fill', (d, i) => {
-			if (i === 0) {
-				return '#03a678';
-			} else {
-				return volData[i - 1].close > d.close ? '#c0392b' : '#03a678';
-			}
-		})
-		.attr('width', 1)
-		.attr('height', d => {
-			return height - yVolumeScale(d['volume']);
-		});
+function ChangeDate(num) {
+	interval = num;
+    console.log("interval = ", interval);
+	len = hist.length;
+    console.log("hist = ", hist);
+    const temp = JSON.parse(JSON.stringify(hist));
+	let temp2 = temp.slice(len - interval, len - 1);
+	Draw(temp2);
 }
 
 axios.get('http://filterbourse.ir/hist/' + inscode).then(response => {
-	//console.log('response = ', response.data[0].hist.reverse());
-	this.Draw(response.data.hist);
+	hist = response.data.hist;
+	len = response.data.hist.length;
+
+    let temp = JSON.parse(JSON.stringify(hist));
+
+	temp = temp.slice(len - interval, len - 1);
+	Draw(temp);
 });
