@@ -1,17 +1,16 @@
 interval = 360;
 
-inscode = '318005355896147';
+//inscode = '318005355896147';
 function Draw(dataa) {
-    let data = []
-    for(i = 0; i < dataa.length; i++)
-    {
-        data[i] = dataa[i];
-    }
+	let data = [];
+	for (i = 0; i < dataa.length; i++) {
+		data[i] = dataa[i];
+	}
 	var margin = {top: 20, right: 50, bottom: 30, left: 80},
 		width = 960 - margin.left - margin.right,
 		height = 500 - margin.top - margin.bottom;
 
-	var parseTime = d3.time.format('%Y-%m-%d');
+	var parseTime = d3.timeParse('%Y-%m-%d');
 
 	var x = d3.scaleTime().range([0, width]);
 	var y = d3.scaleLinear().range([height, 0]);
@@ -106,20 +105,63 @@ function Draw(dataa) {
 
 function ChangeDate(num) {
 	interval = num;
-    console.log("interval = ", interval);
+	console.log('interval = ', interval);
 	len = hist.length;
-    console.log("hist = ", hist);
-    const temp = JSON.parse(JSON.stringify(hist));
+	console.log('hist = ', hist);
+	const temp = JSON.parse(JSON.stringify(hist));
 	let temp2 = temp.slice(len - interval, len - 1);
-	Draw(temp2);
+	//Draw(temp2);
 }
 
 axios.get('http://filterbourse.ir/hist/' + inscode).then(response => {
 	hist = response.data.hist;
 	len = response.data.hist.length;
 
-    let temp = JSON.parse(JSON.stringify(hist));
+	tmed = response.data.tmed;
+
+	pc = response.data.pc;
+	pcp = Math.round(((pc - tmed) / tmed) * 100 * 100) / 100;
+
+	pl = response.data.pl;
+	plp = Math.round(((pl - tmed) / tmed) * 100 * 100) / 100;
+
+	tvol = response.data.tvol;
+
+	let temp = JSON.parse(JSON.stringify(hist));
 
 	temp = temp.slice(len - interval, len - 1);
 	Draw(temp);
+	$('#pc')
+		.text(pc)
+		.css('color', pc > tmed ? 'green' : 'red');
+	$('#pcp')
+		.text('(' + pcp + ')')
+		.css('color', pcp > 0 ? 'green' : 'red');
+
+	$('#pl')
+		.text(pl)
+		.css('color', pl > tmed ? 'green' : 'red');
+
+	$('#plp')
+		.text('(' + plp + ')')
+		.css('color', plp > 0 ? 'green' : 'red');
+
+	$('#tvol')
+		.text(tvol > 1e6 ? Math.round((tvol / 1e6) * 10) / 10 + 'M' : tvol)
+		.css('color', pl > tmed ? 'black' : 'black');
+});
+
+axios.get('http://filterbourse.ir/api/names').then(response => {
+	availableTags = response.data.map(v => (v ? v : 0));
+	console.log('availableTags = ', availableTags);
+	$('#tags').autocomplete({
+		source: availableTags,
+		select: function(event, ui) {
+			if (ui.item) {
+				$('#tags').val(ui.item.value);
+				console.log('value = ', ui.item.value);
+				window.location.href = 'http://filterbourse.ir/' + ui.item.value;
+			}
+		},
+	});
 });

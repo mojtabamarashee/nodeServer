@@ -1,4 +1,4 @@
-let mode = 'SERVER';
+let mode = 'POPULATE_DB';
 var jalaali = require('jalaali-js');
 const Http = require('http');
 fs = require('fs');
