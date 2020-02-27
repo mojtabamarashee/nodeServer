@@ -3,7 +3,7 @@ var jalaali = require('jalaali-js');
 const Http = require('http');
 fs = require('fs');
 path = require('path');
-var compression = require('compression')
+var compression = require('compression');
 readline = require('readline');
 os = require('os');
 //var numeral = require('numeral');
@@ -17,7 +17,7 @@ pClosingError = 1;
 pClosingDone = 0;
 const port = 52013;
 const app = express();
-app.use(compression())
+app.use(compression());
 app.use(express.static('.'));
 let dbo, client;
 
@@ -67,7 +67,6 @@ async function main() {
 	} else if (mode == 'SERVER') {
 		console.log('mode = ', mode);
 		html = fs.readFileSync('symbol/index.html');
-
 
 		app.get('/', (req, res) => {
 			res.sendFile(__dirname + '/main/index.html');
@@ -1227,6 +1226,7 @@ function GetMarketInit(dbo, id) {
 					if (t[1].match(/^IR/)) {
 						inscode = t[0];
 						l18 = t[2];
+						l30 = t[3];
 						pc = t[6];
 						pl = t[7];
 						tvol = t[9];
@@ -1238,6 +1238,14 @@ function GetMarketInit(dbo, id) {
 						cs = t[18];
 						pe = Math.round((Number(pc) / Number(eps)) * 100) / 100;
 						name = l18
+							.toString()
+							.replace('ي', 'ی')
+							.replace('ي', 'ی')
+							.replace('ي', 'ی')
+							.replace('ك', 'ک')
+							.replace('ك', 'ک')
+							.replace('ك', 'ک');
+						fullName = l30
 							.toString()
 							.replace('ي', 'ی')
 							.replace('ي', 'ی')
@@ -1265,6 +1273,7 @@ function GetMarketInit(dbo, id) {
 							{name: name},
 							{
 								$set: {
+									fullName,
 									pl: pl,
 									tmin: tmin,
 									tmax: tmax,
@@ -1636,6 +1645,69 @@ function GetBody(dbo, id) {
 }
 
 pClosingHistCalls = [];
+
+function GetPClosingHist1Day(day, inscode)
+{
+
+	return new Promise(async (res, rej) => {
+		setTimeout(() => {
+			console.log('pClosingSendCntr = ', pClosingSendCntr);
+			console.log('pClosingRecvCntr = ', pClosingRecvCntr);
+			res(1);
+		}, 60000);
+
+		instAll.forEach(async (v, i) => {
+			let ind = allRows.findIndex((v1, i1) => v1.name == v.name);
+			if (ind != -1) {
+				//        console.log("v = ", v);
+				if (v.name.match(/^([^0-9]*)$/) && !allRows[ind].pClosingHist) {
+                    let url = 'http://cdn.tsetmc.com/Loader.aspx?ParTree=15131P&i='+ v.inscode + '&d=' + day ;//20200223
+					pClosingHist1DayCalls[pClosingSendCntr] = axios.CancelToken.source();
+					axios
+						.get(url, {cancelToken: pClosingHist1DayCalls[pClosingSendCntr].token})
+						.then(response => {
+							pClosingHist1DayRecvCntr++;
+							console.log('pclosing1DayOk = ', pClosingHist1DayRecvCntr);
+							if (pClosingHist1DayRecvCntr == pClosingHist1DaySendCntr) {
+								console.log('pClosing1DaySendCntr = ', pClosingHist1DaySendCntr);
+								console.log('pClosing1DayRecvCntr = ', pClosingHist1DayRecvCntr);
+								res(1);
+							}
+
+							hist = response.data
+								.split(';')
+								.map(v => v.split(','))
+								.map(v => ({
+									date: v[0],
+									vol: Number(v[5]),
+									pl: Number(v[6]),
+								}));
+
+							allRows[ind].hist = hist;
+							var row = dbo.collection('allRows').updateOne({name: v.name}, {$set: {hist: hist}});
+						})
+						.catch(error => {
+							pClosingRecvCntr++;
+							console.log('pclosingError = ', error.code);
+							if (pClosingRecvCntr == pClosingSendCntr) {
+								console.log('pClosingSendCntr = ', pClosingSendCntr);
+								console.log('pClosingRecvCntr = ', pClosingRecvCntr);
+								res(1);
+							}
+						});
+					pClosingSendCntr++;
+				}
+			}
+		});
+
+		if (pClosingSendCntr == pClosingRecvCntr) {
+			console.log('pClosingHist already Done');
+			res(1);
+		}
+	});
+}
+
+
 function GetPClosingHist(dbo, id) {
 	return new Promise(async (res, rej) => {
 		setTimeout(() => {
@@ -1704,47 +1776,49 @@ function GetPClosing() {
 	globalCntr++;
 	//out = '';
 	out += globalCntr.toString() + ',';
-	instAll.filter((v, i) => i < 100000).forEach((v, i) => {
-		let urll = 'http://www.tsetmc.com/tsev2/data/instinfodata.aspx?i=' + v.inscode + '&c=44+';
-		//console.log('urll = ', urll);
-		axios
-			.get(urll, {name: 'tese'}, {timeout: 1000})
-			.then(response => {
-				let pClosing = response.data.split(';')[0].split(',')[2];
+	instAll
+		.filter((v, i) => i < 100000)
+		.forEach((v, i) => {
+			let urll = 'http://www.tsetmc.com/tsev2/data/instinfodata.aspx?i=' + v.inscode + '&c=44+';
+			//console.log('urll = ', urll);
+			axios
+				.get(urll, {name: 'tese'}, {timeout: 1000})
+				.then(response => {
+					let pClosing = response.data.split(';')[0].split(',')[2];
 
-				t = allRows.findIndex(v1 => v1.inscode == v.inscode);
+					t = allRows.findIndex(v1 => v1.inscode == v.inscode);
 
-				v.name == 'شیراز' ? console.log('pClosing = ', pClosing) : null;
-				t == -1
-					? (allRows.push({pl: pClosing, inscode: v.inscode, name: v.name}), console.log(pClosing))
-					: null;
+					v.name == 'شیراز' ? console.log('pClosing = ', pClosing) : null;
+					t == -1
+						? (allRows.push({pl: pClosing, inscode: v.inscode, name: v.name}), console.log(pClosing))
+						: null;
 
-				//histRecvCntr++;
-				//pClosing = 100;
-				//console.log(inscode);
-				//MongoClient.connect(
-				//	url,
-				//	(err, client) => {
-				//		let pClosing = response.data.split(';')[0].split(',')[2];
-				//		//out += pClosing.toString() + ':';
-				//		dbo = client.db('filterbo_database');
-				//		console.log(pClosing + ':' + inscode);
-				//		dbo.collection('allRows').updateOne(
-				//			{inscode: inscode},
-				//			{$set: {pClosing: pClosing}},
-				//			(e, r) => {
-				//				if (err) throw err;
-				//				// client.close();
-				//			},
-				//		);
-				//	},
-				//);
-			})
-			.catch(error => {
-				out += error;
-				console.log('error = ', error);
-			});
-	});
+					//histRecvCntr++;
+					//pClosing = 100;
+					//console.log(inscode);
+					//MongoClient.connect(
+					//	url,
+					//	(err, client) => {
+					//		let pClosing = response.data.split(';')[0].split(',')[2];
+					//		//out += pClosing.toString() + ':';
+					//		dbo = client.db('filterbo_database');
+					//		console.log(pClosing + ':' + inscode);
+					//		dbo.collection('allRows').updateOne(
+					//			{inscode: inscode},
+					//			{$set: {pClosing: pClosing}},
+					//			(e, r) => {
+					//				if (err) throw err;
+					//				// client.close();
+					//			},
+					//		);
+					//	},
+					//);
+				})
+				.catch(error => {
+					out += error;
+					console.log('error = ', error);
+				});
+		});
 }
 
 async function InitDbAndAllRows(dbo) {
@@ -1773,16 +1847,13 @@ async function InitDbAndAllRows(dbo) {
 
 async function ConnectToDB() {
 	return new Promise((res, rej) => {
-		MongoClient.connect(
-			mongoUrl,
-			async (err, clt) => {
-				console.log('err = ', err);
-				dbo = await clt.db('filterbo_database');
-				console.log('dbo = ');
-				client = clt;
-				res(1);
-			},
-		);
+		MongoClient.connect(mongoUrl, async (err, clt) => {
+			console.log('err = ', err);
+			dbo = await clt.db('filterbo_database');
+			console.log('dbo = ');
+			client = clt;
+			res(1);
+		});
 	});
 }
 

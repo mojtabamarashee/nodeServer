@@ -58,12 +58,12 @@ function Draw(dataa) {
 	// Add the X Axis
 	svg.append('g')
 		.attr('transform', 'translate(0,' + height + ')')
-		.style('font', '16px times')
+		.style('font', '20px times')
 		.call(d3.axisBottom(x));
 
 	// Add the Y Axis
 	svg.append('g')
-		.style('font', '16px times')
+		.style('font', '25px times')
 		.call(d3.axisLeft(y));
 	//});
 
@@ -114,6 +114,10 @@ function ChangeDate(num) {
 }
 
 axios.get('http://filterbourse.ir/hist/' + inscode).then(response => {
+	name = response.data.name;
+	fullName = response.data.fullName;
+	csName = response.data.csName;
+
 	hist = response.data.hist;
 	len = response.data.hist.length;
 
@@ -131,6 +135,12 @@ axios.get('http://filterbourse.ir/hist/' + inscode).then(response => {
 
 	temp = temp.slice(len - interval, len - 1);
 	Draw(temp);
+
+	$('#title').text(name + '-' + pc);
+	$('#name').text(name);
+	$('#full-name').text('(' + fullName +')');
+	$('#cs-name').text(csName);
+
 	$('#pc')
 		.text(pc)
 		.css('color', pc > tmed ? 'green' : 'red');
@@ -147,7 +157,7 @@ axios.get('http://filterbourse.ir/hist/' + inscode).then(response => {
 		.css('color', plp > 0 ? 'green' : 'red');
 
 	$('#tvol')
-		.text(tvol > 1e6 ? Math.round((tvol / 1e6) * 10) / 10 + 'M' : tvol)
+		.text(numeral(tvol))
 		.css('color', pl > tmed ? 'black' : 'black');
 });
 
@@ -165,3 +175,11 @@ axios.get('http://filterbourse.ir/api/names').then(response => {
 		},
 	});
 });
+
+function numeral(tvol) {
+	if (tvol > 1e6) {
+		return Math.round((tvol / 1e6) * 10) / 10 + 'M';
+	} else if (tvol > 1000) {
+		return Math.round((tvol / 1e3) * 10) / 10 + 'K';
+	}
+}
