@@ -52,7 +52,7 @@ async function main() {
 			});
 			console.log('GetPClosingHistDone');
 
-            await GetIntraDayPrice(dbo, id)
+			await GetIntraDayPrice(dbo, id);
 			intraDayPriceCalls.forEach(v => {
 				if (v) v.cancel();
 			});
@@ -1570,6 +1570,10 @@ async function GetBodyValues(body, v, dbo) {
 		match = regex.exec(body);
 		csName = match[1];
 
+		var regex = /QTotTran5JAvg='(.*?)',SectorPE/g;
+		match = regex.exec(body);
+		QTotTran5JAvg = match[1];
+
 		var regex = /,Title='.*',Fa/g;
 		match = regex.exec(body);
 		if (match[0].match('زرد')) {
@@ -1590,6 +1594,7 @@ async function GetBodyValues(body, v, dbo) {
 					totalVol: totalVol,
 					sectorPE: sectorPE,
 					csName: csName,
+					QTotTran5JAvg,
 					color: color,
 					body: 1,
 				},
@@ -1654,9 +1659,7 @@ function GetBody(dbo, id) {
 
 pClosingHistCalls = [];
 
-function GetPClosingHist1Day(day, inscode)
-{
-
+function GetPClosingHist1Day(day, inscode) {
 	return new Promise(async (res, rej) => {
 		setTimeout(() => {
 			console.log('pClosingSendCntr = ', pClosingSendCntr);
@@ -1669,7 +1672,7 @@ function GetPClosingHist1Day(day, inscode)
 			if (ind != -1) {
 				//        console.log("v = ", v);
 				if (v.name.match(/^([^0-9]*)$/) && !allRows[ind].pClosingHist) {
-                    let url = 'http://cdn.tsetmc.com/Loader.aspx?ParTree=15131P&i='+ v.inscode + '&d=' + day ;//20200223
+					let url = 'http://cdn.tsetmc.com/Loader.aspx?ParTree=15131P&i=' + v.inscode + '&d=' + day; //20200223
 					pClosingHist1DayCalls[pClosingSendCntr] = axios.CancelToken.source();
 					axios
 						.get(url, {cancelToken: pClosingHist1DayCalls[pClosingSendCntr].token})
@@ -1715,11 +1718,8 @@ function GetPClosingHist1Day(day, inscode)
 	});
 }
 
-
-intraDayPriceCalls = []
-function GetIntraDayPrice(day, inscode)
-{
-
+intraDayPriceCalls = [];
+function GetIntraDayPrice(day, inscode) {
 	return new Promise(async (res, rej) => {
 		setTimeout(() => {
 			console.log('intraDaySendCntr = ', intraDaySendCntr);
@@ -1731,7 +1731,7 @@ function GetIntraDayPrice(day, inscode)
 			let ind = allRows.findIndex((v1, i1) => v1.name == v.name);
 			if (ind != -1) {
 				if (v.name.match(/^([^0-9]*)$/) && !allRows[ind].intraDayPrice) {
-                    let url = 'http://www.tsetmc.com/tsev2/chart/data/IntraDayPrice.aspx?i='+ v.inscode;
+					let url = 'http://www.tsetmc.com/tsev2/chart/data/IntraDayPrice.aspx?i=' + v.inscode;
 					intraDayPriceCalls[intraDaySendCntr] = axios.CancelToken.source();
 					axios
 						.get(url, {cancelToken: intraDayPriceCalls[intraDaySendCntr].token})
@@ -1754,7 +1754,9 @@ function GetIntraDayPrice(day, inscode)
 								}));
 
 							allRows[ind].intraDayPrice = intraDayPrice;
-							var row = dbo.collection('allRows').updateOne({name: v.name}, {$set: {intraDayPrice: intraDayPrice}});
+							var row = dbo
+								.collection('allRows')
+								.updateOne({name: v.name}, {$set: {intraDayPrice: intraDayPrice}});
 						})
 						.catch(error => {
 							intraDayRecvCntr++;
@@ -1776,9 +1778,6 @@ function GetIntraDayPrice(day, inscode)
 		}
 	});
 }
-
-
-
 
 function GetPClosingHist(dbo, id) {
 	return new Promise(async (res, rej) => {

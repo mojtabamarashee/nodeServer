@@ -131,6 +131,7 @@ axios.get('http://filterbourse.ir/hist/' + inscode).then(response => {
 	plp = Math.round(((pl - tmed) / tmed) * 100 * 100) / 100;
 
 	tvol = response.data.tvol;
+	tvolp = response.data.QTotTran5JAvg;
 
 	let temp = JSON.parse(JSON.stringify(hist));
 	temp = temp.slice(len - interval, len - 1);
@@ -178,6 +179,9 @@ axios.get('http://filterbourse.ir/hist/' + inscode).then(response => {
 	$('#tvol')
 		.text(numeral(tvol))
 		.css('color', pl > tmed ? 'black' : 'black');
+	$('#Mtvol')
+		.text(Math.round(tvol / tvolp * 10) / 10)
+		.css('color', Number(tvol) > Number(tvolp) ? 'green' : 'red');
 });
 
 axios.get('http://filterbourse.ir/api/names').then(response => {
