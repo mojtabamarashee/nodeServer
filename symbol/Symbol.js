@@ -1,7 +1,7 @@
 interval = 360;
 
 //inscode = '318005355896147';
-function Draw(dataa) {
+function Draw(dataa, id, timeFormat) {
 	let data = [];
 	for (i = 0; i < dataa.length; i++) {
 		data[i] = dataa[i];
@@ -10,7 +10,7 @@ function Draw(dataa) {
 		width = 960 - margin.left - margin.right,
 		height = 500 - margin.top - margin.bottom;
 
-	var parseTime = d3.timeParse('%Y-%m-%d');
+	//var parseTime = d3.timeParse(timeFormat);
 
 	var x = d3.scaleTime().range([0, width]);
 	var y = d3.scaleLinear().range([height, 0]);
@@ -25,17 +25,17 @@ function Draw(dataa) {
 		});
 
 	var svg = d3
-		.select('body')
+		.select(id)
 		.append('svg')
 		.attr('width', width + margin.left + margin.right)
 		.attr('height', height + margin.top + margin.bottom)
 		.append('g')
 		.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
-	data.forEach(function(d) {
-		d.date = parseTime(d.date.slice(0, 4) + '-' + d.date.slice(4, 6) + '-' + d.date.slice(6, 8));
-		d.pl = d.pl;
-	});
+	//data.forEach(function(d) {
+	//	d.date = parseTime(d.date.slice(0, 4) + '-' + d.date.slice(4, 6) + '-' + d.date.slice(6, 8));
+	//	d.pl = d.pl;
+	//});
 
 	x.domain(
 		d3.extent(data, function(d) {
@@ -43,7 +43,9 @@ function Draw(dataa) {
 		}),
 	);
 	y.domain([
-		0,
+		d3.min(data, function(d) {
+			return d.pl;
+		}),
 		d3.max(data, function(d) {
 			return d.pl;
 		}),
@@ -64,7 +66,7 @@ function Draw(dataa) {
 	// Add the Y Axis
 	svg.append('g')
 		.style('font', '25px times')
-		.call(d3.axisLeft(y));
+		.call(d3.axisLeft(y).ticks(5));
 	//});
 
 	//	const volData = data.filter(d => d['vol'] !== null && d['vol'] !== 0);
@@ -110,7 +112,6 @@ function ChangeDate(num) {
 	console.log('hist = ', hist);
 	const temp = JSON.parse(JSON.stringify(hist));
 	let temp2 = temp.slice(len - interval, len - 1);
-	//Draw(temp2);
 }
 
 axios.get('http://filterbourse.ir/hist/' + inscode).then(response => {
@@ -132,13 +133,31 @@ axios.get('http://filterbourse.ir/hist/' + inscode).then(response => {
 	tvol = response.data.tvol;
 
 	let temp = JSON.parse(JSON.stringify(hist));
-
 	temp = temp.slice(len - interval, len - 1);
-	Draw(temp);
+
+	var parseTime = d3.timeParse('%Y-%m-%d');
+	temp.forEach(function(d) {
+		d.date = parseTime(d.date.slice(0, 4) + '-' + d.date.slice(4, 6) + '-' + d.date.slice(6, 8));
+		d.pl = d.pl;
+	});
+	Draw(temp, '#hist', '%Y-%m-%d');
+
+	intraDayPrice = response.data.intraDayPrice;
+	console.log('intraDayPrice = ', intraDayPrice);
+	len = response.data.intraDayPrice.length;
+	temp = JSON.parse(JSON.stringify(intraDayPrice));
+	temp = temp.slice(len - interval, len - 1);
+
+	var parseTime = d3.timeParse('%H:%M');
+	temp.forEach(function(d) {
+		d.date = parseTime(d.date);
+		//d.pl = d.pl;
+	});
+	Draw(temp, '#one-day', '%H:%M');
 
 	$('#title').text(name + '-' + pc);
 	$('#name').text(name);
-	$('#full-name').text('(' + fullName +')');
+	$('#full-name').text('(' + fullName + ')');
 	$('#cs-name').text(csName);
 
 	$('#pc')

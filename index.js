@@ -51,6 +51,12 @@ async function main() {
 				if (v) v.cancel();
 			});
 			console.log('GetPClosingHistDone');
+
+            await GetIntraDayPrice(dbo, id)
+			intraDayPriceCalls.forEach(v => {
+				if (v) v.cancel();
+			});
+
 			await GetClientType(dbo, id);
 			clientTypeHistCalls.forEach(v => {
 				if (v) v.cancel();
@@ -1172,6 +1178,8 @@ pClosingRecvCntr = 0;
 bodySendCntr = 0;
 bodyRecvCntr = 0;
 histError = 0;
+intraDaySendCntr = 0;
+intraDayRecvCntr = 0;
 
 let url = 'mongodb://filterbo_database:11111aaaaa@localhost:27017/filterbo_database';
 
@@ -1706,6 +1714,70 @@ function GetPClosingHist1Day(day, inscode)
 		}
 	});
 }
+
+
+intraDayPriceCalls = []
+function GetIntraDayPrice(day, inscode)
+{
+
+	return new Promise(async (res, rej) => {
+		setTimeout(() => {
+			console.log('intraDaySendCntr = ', intraDaySendCntr);
+			console.log('intraDayRecvCntr = ', intraDayRecvCntr);
+			res(1);
+		}, 60000);
+
+		instAll.forEach(async (v, i) => {
+			let ind = allRows.findIndex((v1, i1) => v1.name == v.name);
+			if (ind != -1) {
+				if (v.name.match(/^([^0-9]*)$/) && !allRows[ind].intraDayPrice) {
+                    let url = 'http://www.tsetmc.com/tsev2/chart/data/IntraDayPrice.aspx?i='+ v.inscode;
+					intraDayPriceCalls[intraDaySendCntr] = axios.CancelToken.source();
+					axios
+						.get(url, {cancelToken: intraDayPriceCalls[intraDaySendCntr].token})
+						.then(response => {
+							intraDayRecvCntr++;
+							console.log('intraDayOk = ', intraDayRecvCntr);
+							if (intraDayRecvCntr == intraDaySendCntr) {
+								console.log('intraDaySendCntr = ', intraDaySendCntr);
+								console.log('intraDayRecvCntr = ', intraDayRecvCntr);
+								res(1);
+							}
+
+							intraDayPrice = response.data
+								.split(';')
+								.map(v => v.split(','))
+								.map(v => ({
+									date: v[0],
+									pl: Number(v[4]),
+									vol: Number(v[5]),
+								}));
+
+							allRows[ind].intraDayPrice = intraDayPrice;
+							var row = dbo.collection('allRows').updateOne({name: v.name}, {$set: {intraDayPrice: intraDayPrice}});
+						})
+						.catch(error => {
+							intraDayRecvCntr++;
+							console.log('intraDayError = ', error);
+							if (intraDayRecvCntr == intraDaySendCntr) {
+								console.log('intraDaySendCntr = ', intraDaySendCntr);
+								console.log('intraDayRecvCntr = ', intraDayRecvCntr);
+								res(1);
+							}
+						});
+					intraDaySendCntr++;
+				}
+			}
+		});
+
+		if (intraDaySendCntr == intraDayRecvCntr) {
+			console.log('intraDay already Done');
+			res(1);
+		}
+	});
+}
+
+
 
 
 function GetPClosingHist(dbo, id) {
