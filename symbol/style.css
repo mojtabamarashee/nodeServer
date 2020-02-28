@@ -6,3 +6,15 @@ td {
 body {
   font-family: "Courier New";
 }
+
+
+.ui-menu .ui-menu-item a{
+    font-size:30px!important;
+}
+
+#tags:active {
+    box-shadow: 0 0 30px #96f226
+}
+#tags:focus {
+    box-shadow: 0 0 30px #96f226
+}

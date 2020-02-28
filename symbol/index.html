@@ -1,5 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+  <link rel="stylesheet" href="symbol/style.css" />
+  <link
+    rel="stylesheet"
+    href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"
+  />
   <style>
     .line {
       fill: none;
@@ -15,12 +20,6 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.15.0/d3.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <link
-    rel="stylesheet"
-    href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"
-  />
-
-  <link rel="stylesheet" href="symbol/style.css" />
 
   <script
     src="https://code.jquery.com/jquery-3.4.1.min.js"
@@ -47,13 +46,16 @@
   <head>
     <meta charset="UTF-8" />
     <title id="title"> </title>
+    <link rel="stylesheet" href="symbol/style.css" />
   </head>
   <body>
     <div id="root"></div>
     <div dir="rtl">
       <div style="margin:20px 20px 0 0" class="ui-widget">
-        <label style="font-size:30px;" for="tags">نماد: </label>
-        <input id="tags" />
+        <label style="font-size:30px;height:50px; width:300px" for="tags"
+          >نماد:
+        </label>
+        <input style="font-size:30px;height:50px; width:300px" id="tags" />
       </div>
       <br />
       <br />
@@ -89,7 +91,7 @@
       <br />
       <br />
       <br />
-      <div class="widget">
+      <div dir="ltr" class="widget">
         <div class="controlgroup">
           <label for="7d" style="font-size:28px" onclick="ChangeDate(7)"
             >7d</label
@@ -119,14 +121,12 @@
         </div>
       </div>
 
-      <div dir='ltr' style='width:100%' id="hist">
-      </div>
+      <div dir="ltr" style="width:100%" id="hist"></div>
       <br />
       <br />
 
-      <div dir='ltr' style='width:100%' id="one-day">
-      </div>
-
+      <div dir="ltr" style="width:100%" id="one-day"></div>
+      <svg id="money-flow" width="650" height="400"></svg>
     </div>
   </body>
 </html>

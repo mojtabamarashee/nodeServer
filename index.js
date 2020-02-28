@@ -1238,12 +1238,14 @@ function GetMarketInit(dbo, id) {
 						pc = t[6];
 						pl = t[7];
 						tvol = t[9];
-						tmin = t[11];
-						tmax = t[12];
+						pmin = t[11];
+						pmax = t[12];
 						tmed = t[13];
 						eps = t[14];
 						flow = t[17];
 						cs = t[18];
+						tmax = t[19];
+						tmin = t[20];
 						pe = Math.round((Number(pc) / Number(eps)) * 100) / 100;
 						name = l18
 							.toString()
