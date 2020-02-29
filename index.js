@@ -20,8 +20,43 @@ const app = express();
 app.use(compression());
 app.use(express.static('.'));
 let dbo, client;
+allRowsBuffer = [];
 
 async function main() {
+	bd = 0;
+	cth = 0;
+	idp = 0;
+	pch = 0;
+	cl = 0;
+	mi = 0;
+    pt = 0
+
+	process.argv.forEach(function(val, index, array) {
+		if (val == 'bd') {
+			bd = 1;
+			console.log('bd = ', bd);
+		}
+
+		if (val == 'cth') {
+			cth = 1;
+		}
+		if (val == 'idp') {
+			idp = 1;
+		}
+		if (val == 'pch') {
+			pch = 1;
+		}
+		if (val == 'cl') {
+			cl = 1;
+		}
+		if (val == 'mi') {
+			mi = 1;
+		}
+		if (val == 'pt') {
+			pt = 1;
+		}
+	});
+
 	if (mode == 'LOCAL') mongoUrl = 'mongodb://localhost:27017';
 	if (mode == 'SERVER') mongoUrl = 'mongodb://filterbo_database:11111aaaaa@localhost:27017/filterbo_database';
 
@@ -32,38 +67,58 @@ async function main() {
 	await ConnectToDB();
 	if (mode == 'POPULATE_DB') {
 		await InitDbAndAllRows(dbo);
-		await dbo.createCollection('allRows', async (err, res) => {});
+		//await dbo.createCollection('allRows', async (err, res) => {});
 
 		let id = 1;
 		for (i = 0; i < 5; i++) {
+
 			console.log('round = ', i);
-			GetParTree();
-			//await GetBody(dbo, id);
-			bodyCalls.forEach(v => {
-				if (v) v.cancel();
-			});
-			console.log('bodyDone');
-			//await GetMarketInit(dbo, id);
-			//await GetClientTypeAll(dbo, id);
-			console.log('marketInitDone3 = ', marketInitDone);
-			await GetPClosingHist(dbo, id);
-			pClosingHistCalls.forEach(v => {
-				if (v) v.cancel();
-			});
-			console.log('GetPClosingHistDone');
 
-			await GetIntraDayPrice(dbo, id);
-			intraDayPriceCalls.forEach(v => {
-				if (v) v.cancel();
-			});
+			if (pt == 1) {
+				GetParTree();
+			}
 
-			await GetClientType(dbo, id);
-			clientTypeHistCalls.forEach(v => {
-				if (v) v.cancel();
-			});
-			console.log('GetClientTypeHistDone');
+			if (bd == 1) {
+				await GetBody(dbo, id);
+				bodyCalls.forEach(v => {
+					if (v) v.cancel();
+				});
+				console.log('bodyDone');
+			}
 
-			GetShakesHa();
+			if (mi == 1) {
+				await GetMarketInit(dbo, id);
+				console.log('marketInitDone3 = ', marketInitDone);
+
+				await GetClientTypeAll(dbo, id);
+				console.log('marketInitDone3 = ', marketInitDone);
+			}
+
+			if (pch == 1) {
+				await GetPClosingHist(dbo, id);
+				pClosingHistCalls.forEach(v => {
+					if (v) v.cancel();
+				});
+				console.log('GetPClosingHistDone');
+			}
+
+			if (idp == 1) {
+				await GetIntraDayPrice(dbo, id);
+				intraDayPriceCalls.forEach(v => {
+					if (v) v.cancel();
+				});
+				console.log('GetIntraDayPriceDone');
+			}
+
+			if (cth == 1) {
+				await GetClientTypeHist(dbo, id);
+				clientTypeHistCalls.forEach(v => {
+					if (v) v.cancel();
+				});
+				console.log('GetClientTypeHistDone');
+			}
+
+			//GetShakesHa();
 		}
 		setTimeout(() => {
 			try {
@@ -1191,6 +1246,7 @@ let successCntr = 0;
 let insertedCntr = 0;
 let errorCntr = 0;
 let testCntr = 0;
+
 function GetDate() {
 	let date = new Date().toLocaleTimeString('fa-IR', {
 		hour: '2-digit',
@@ -1369,8 +1425,6 @@ function GetMarketInit(dbo, id) {
 				});
 				console.log('marketInitDone1 = ', marketInitDone);
 
-				//await dbo.collection('allRows').replaceOne({_id: 'symbols'}, {symbols});
-
 				res(1);
 			})
 			.catch(error => {
@@ -1379,7 +1433,6 @@ function GetMarketInit(dbo, id) {
 				console.log('marketInitDone2 = ', marketInitDone);
 				errorCntr++;
 			});
-		//allRows.map((v, i) => file1.write('{inscode : "' + v.inscode + '", name : "' + v.name + '"}' + '\n'));
 	});
 }
 
@@ -1411,7 +1464,7 @@ function GetParTree(id) {
 				res(1);
 			})
 			.catch(error => {
-				console.log('parTree error = ', error);
+				console.log('parTree error = ', error.code);
 				parTreeDoneDone = 0;
 				errorCntr++;
 				res(1);
@@ -1475,7 +1528,7 @@ function GetClientTypeAll(dbo, id) {
 }
 
 clientTypeHistCalls = [];
-function GetClientType(dbo, id) {
+function GetClientTypeHist(dbo, id) {
 	return new Promise(async (res, rej) => {
 		setTimeout(() => {
 			console.log('f3');
@@ -1483,12 +1536,6 @@ function GetClientType(dbo, id) {
 			console.log('ctRecvCntr = ', ctRecvCntr);
 			res(1);
 		}, 60000);
-
-		// let t = await dbo
-		//   .collection('allRows')
-		//   .find({symbols: {$exists: true}})
-		//   .toArray();
-		// allRows = t[0].symbols;
 
 		instAll.forEach((v, i) => {
 			let ind = allRows.findIndex((v1, i1) => v1.name == v.name);
@@ -1503,6 +1550,7 @@ function GetClientType(dbo, id) {
 						//console.log('ctRecvCntr = ', ctRecvCntr);
 						console.log('ctOk = ', ctRecvCntr);
 						ctHist = response.data.split(';').slice(0, 30);
+						allRows[ind].ctHist = ctHist;
 						dbo.collection('allRows').updateOne({name: v.name}, {$set: {ctHist: ctHist}});
 
 						if (ctRecvCntr == ctSendCntr) {
@@ -1575,6 +1623,7 @@ async function GetBodyValues(body, v, dbo) {
 		var regex = /QTotTran5JAvg='(.*?)',SectorPE/g;
 		match = regex.exec(body);
 		QTotTran5JAvg = match[1];
+		console.log('QTotTran5JAvg = ', QTotTran5JAvg);
 
 		var regex = /,Title='.*',Fa/g;
 		match = regex.exec(body);
@@ -1596,7 +1645,7 @@ async function GetBodyValues(body, v, dbo) {
 					totalVol: totalVol,
 					sectorPE: sectorPE,
 					csName: csName,
-					QTotTran5JAvg,
+					QTotTran5JAvg: QTotTran5JAvg,
 					color: color,
 					body: 1,
 				},
@@ -1615,11 +1664,6 @@ function GetBody(dbo, id) {
 			console.log('bodyRecvCntr = ', bodyRecvCntr);
 			res(1);
 		}, 60000);
-		//let t = await dbo
-		//  .collection('allRows')
-		//  .find({symbols: {$exists: true}})
-		//  .toArray();
-		//allRows = t[0].symbols;
 
 		instAll.forEach((v, i) => {
 			let ind = allRows.findIndex((v1, i1) => v1.name == v.name);
@@ -1721,6 +1765,7 @@ function GetPClosingHist1Day(day, inscode) {
 }
 
 intraDayPriceCalls = [];
+intraDayBuffer = [];
 function GetIntraDayPrice(day, inscode) {
 	return new Promise(async (res, rej) => {
 		setTimeout(() => {
@@ -1763,6 +1808,10 @@ function GetIntraDayPrice(day, inscode) {
 						.catch(error => {
 							intraDayRecvCntr++;
 							console.log('intraDayError = ', error.code);
+							file1.write(v.name + '\n');
+							if (error.code == 'Z_BUF_ERROR') {
+								allRows[ind].intraDayPrice = [];
+							}
 							if (intraDayRecvCntr == intraDaySendCntr) {
 								console.log('intraDaySendCntr = ', intraDaySendCntr);
 								console.log('intraDayRecvCntr = ', intraDayRecvCntr);
@@ -1798,7 +1847,7 @@ function GetPClosingHist(dbo, id) {
 			let ind = allRows.findIndex((v1, i1) => v1.name == v.name);
 			if (ind != -1) {
 				//        console.log("v = ", v);
-				if (v.name.match(/^([^0-9]*)$/) && !allRows[ind].pClosingHist) {
+				if (v.name.match(/^([^0-9]*)$/) && !allRows[ind].hist) {
 					url = 'http://tsetmc.com/tsev2/chart/data/Financial.aspx?i=' + v.inscode + '&t=ph&a=1';
 					pClosingHistCalls[pClosingSendCntr] = axios.CancelToken.source();
 					axios
@@ -1822,12 +1871,15 @@ function GetPClosingHist(dbo, id) {
 								}));
 
 							allRows[ind].hist = hist;
-                            console.log("hist = ", hist);
+							//console.log("hist = ", hist);
 							var row = dbo.collection('allRows').updateOne({name: v.name}, {$set: {hist: hist}});
 						})
 						.catch(error => {
 							pClosingRecvCntr++;
 							console.log('pclosingError = ', error.code);
+							if (error.code == 'Z_BUF_ERROR') {
+								allRows[ind].hist = [];
+							}
 							if (pClosingRecvCntr == pClosingSendCntr) {
 								console.log('pClosingSendCntr = ', pClosingSendCntr);
 								console.log('pClosingRecvCntr = ', pClosingRecvCntr);
@@ -1899,18 +1951,25 @@ async function InitDbAndAllRows(dbo) {
 	return new Promise(async (res, rej) => {
 		allRows = [];
 
-		try {
-			dbo.collection('allRows').remove({});
-		} catch (e) {
-			console.log('e = ', e);
+		if (cl == 1) {
+			try {
+				dbo.collection('allRows').remove({});
+			} catch (e) {
+				console.log('e = ', e);
+			}
 		}
-		console.log('d1');
 
 		await dbo.createCollection('allRows');
 
 		instAll.forEach(async (v, i) => {
 			allRows.push({inscode: v.inscode, name: v.name});
-			await dbo.collection('allRows').insertOne(v);
+			row = await dbo
+				.collection('allRows')
+				.find({name: v.name})
+				.toArray();
+			if (!row.length) {
+				await dbo.collection('allRows').insertOne(v);
+			}
 		});
 
 		//await dbo.collection('allRows').insertMany({allRows});
