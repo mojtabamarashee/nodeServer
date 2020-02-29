@@ -1545,13 +1545,13 @@ function GetClientTypeHist(dbo, id) {
 				//console.log('ctSendCntr = ', ctSendCntr);
 				axios
 					.get(url, {cancelToken: clientTypeHistCalls[ctSendCntr].token})
-					.then(response => {
+					.then(async response => {
 						ctRecvCntr++;
 						//console.log('ctRecvCntr = ', ctRecvCntr);
 						console.log('ctOk = ', ctRecvCntr);
 						ctHist = response.data.split(';').slice(0, 30);
 						allRows[ind].ctHist = ctHist;
-						dbo.collection('allRows').updateOne({name: v.name}, {$set: {ctHist: ctHist}});
+						await dbo.collection('allRows').updateOne({name: v.name}, {$set: {ctHist: ctHist}});
 
 						if (ctRecvCntr == ctSendCntr) {
 							console.log('res = ', res);
@@ -1782,7 +1782,7 @@ function GetIntraDayPrice(day, inscode) {
 					intraDayPriceCalls[intraDaySendCntr] = axios.CancelToken.source();
 					axios
 						.get(url, {cancelToken: intraDayPriceCalls[intraDaySendCntr].token})
-						.then(response => {
+						.then(async response => {
 							intraDayRecvCntr++;
 							console.log('intraDayOk = ', intraDayRecvCntr);
 							if (intraDayRecvCntr == intraDaySendCntr) {
@@ -1801,7 +1801,7 @@ function GetIntraDayPrice(day, inscode) {
 								}));
 
 							allRows[ind].intraDayPrice = intraDayPrice;
-							var row = dbo
+							var row = await dbo
 								.collection('allRows')
 								.updateOne({name: v.name}, {$set: {intraDayPrice: intraDayPrice}});
 						})

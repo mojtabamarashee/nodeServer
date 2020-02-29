@@ -56,6 +56,7 @@ function DrawHist(dataa, id, timeFormat) {
 		.call(
 			d3
 				.axisBottom(x)
+				.ticks(5)
 				.tickFormat(d =>
 					new Date(d)
 						.toLocaleTimeString('fa-IR', {year: '2-digit', month: '2-digit'})
@@ -204,6 +205,67 @@ function Draw(dataa, id, timeFormat, tmin, tmax) {
 		.call(d3.axisLeft(y).ticks(5));
 }
 
+
+function DrawMoneyFlow(dataa, id) {
+	let data = [];
+	for (i = 0; i < dataa.length; i++) {
+		data[i] = dataa[i];
+	}
+	var margin = {top: 20, right: 50, bottom: 30, left: 80},
+		width = 960 - margin.left - margin.right,
+		height = 500 - margin.top - margin.bottom;
+
+	var svg = d3
+		.select(id)
+		.append('svg')
+		.attr('width', width + margin.left + margin.right)
+		.attr('height', height + margin.top + margin.bottom)
+		.append('g')
+		.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+	var x = d3.scaleTime().range([0, width]);
+	var y = d3.scaleLinear().range([height, 0]);
+
+	//vol data
+	const volData = data.map(v=>(v.split(',')));
+    console.log("volData = ", volData);
+	const yMinVolume = d3.min(volData, d => {
+		return (Number(d[5]) - Number(d[6]));
+	});
+	const yMaxVolume = d3.max(volData, d => {
+		return (Number(d[5]) - Number(d[6]));
+	});
+	console.log('yMaxVolume = ', yMaxVolume);
+
+	const yVolumeScale = d3
+		.scaleLinear()
+		.domain([yMinVolume, yMaxVolume])
+		.range([height, 0]);
+
+	svg.selectAll()
+		.data(volData)
+		.enter()
+		.append('rect')
+		.attr('x', d => {
+			return x(Number(d[0]));
+		})
+		.attr('y', d => {
+			return yVolumeScale(Number(d[5]) - Number(d[6]));
+		})
+		//.attr('fill', (d, i) => {
+		//	if (i === 0) {
+		//		return '#03a678';
+		//	} else {
+		//		return volData[i - 1].pl > d.pl ? '#c0392b' : '#03a678';
+		//	}
+		//})
+		//.attr('width', 1)
+		//.attr('height', d => {
+		//	return height - yVolumeScale(d['vol']);
+		//});
+}
+
+
 function ChangeDate(num) {
 	interval = num;
 	console.log('interval = ', interval);
@@ -235,7 +297,6 @@ axios.get('http://filterbourse.ir/hist/' + inscode).then(response => {
 	console.log('tvol = ', tvol);
 	tvolp = response.data.QTotTran5JAvg;
 
-
 	$('#title').text(name + '-' + pc);
 	$('#name').text(name);
 	$('#full-name').text('(' + fullName + ')');
@@ -263,29 +324,36 @@ axios.get('http://filterbourse.ir/hist/' + inscode).then(response => {
 		.text(Math.round((tvol / tvolp) * 10) / 10)
 		.css('color', Number(tvol) > Number(tvolp) ? 'green' : 'red');
 
-	let temp = JSON.parse(JSON.stringify(hist));
-	temp = temp.slice(len - interval, len - 1);
+	if (hist) {
+		let temp = JSON.parse(JSON.stringify(hist));
+		temp = temp.slice(len - interval, len - 1);
 
-	var parseTime = d3.timeParse('%Y-%m-%d');
-	temp.forEach(function(d) {
-		d.date = parseTime(d.date.slice(0, 4) + '-' + d.date.slice(4, 6) + '-' + d.date.slice(6, 8));
-		d.pl = d.pl;
-	});
+		var parseTime = d3.timeParse('%Y-%m-%d');
+		temp.forEach(function(d) {
+			d.date = parseTime(d.date.slice(0, 4) + '-' + d.date.slice(4, 6) + '-' + d.date.slice(6, 8));
+			d.pl = d.pl;
+		});
 
-	DrawHist(temp, '#hist', '%Y-%m-%d');
+		DrawHist(temp, '#hist', '%Y-%m-%d');
+	}
 
 	intraDayPrice = response.data.intraDayPrice;
-	len = response.data.intraDayPrice.length;
-	temp = JSON.parse(JSON.stringify(intraDayPrice));
-	temp = temp.slice(len - interval, len - 1);
+	if (intraDayPrice) {
+		len = response.data.intraDayPrice.length;
+		temp = JSON.parse(JSON.stringify(intraDayPrice));
+		temp = temp.slice(len - interval, len - 1);
 
-	var parseTime = d3.timeParse('%H:%M');
-	temp.forEach(function(d) {
-		d.date = parseTime(d.date);
-		//d.pl = d.pl;
-	});
-	Draw(temp, '#one-day', '%H:%M', tmin, tmax);
+		var parseTime = d3.timeParse('%H:%M');
+		temp.forEach(function(d) {
+			d.date = parseTime(d.date);
+			//d.pl = d.pl;
+		});
+		Draw(temp, '#one-day', '%H:%M', tmin, tmax);
+	}
 
+
+    console.log("ctHist = ", response.data.ctHist);
+	DrawMoneyFlow(response.data.ctHist, '#money-flow');
 });
 
 axios.get('http://filterbourse.ir/api/names').then(response => {
