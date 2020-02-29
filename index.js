@@ -38,13 +38,13 @@ async function main() {
 		for (i = 0; i < 5; i++) {
 			console.log('round = ', i);
 			GetParTree();
-			await GetBody(dbo, id);
+			//await GetBody(dbo, id);
 			bodyCalls.forEach(v => {
 				if (v) v.cancel();
 			});
 			console.log('bodyDone');
-			await GetMarketInit(dbo, id);
-			await GetClientTypeAll(dbo, id);
+			//await GetMarketInit(dbo, id);
+			//await GetClientTypeAll(dbo, id);
 			console.log('marketInitDone3 = ', marketInitDone);
 			await GetPClosingHist(dbo, id);
 			pClosingHistCalls.forEach(v => {
@@ -1374,7 +1374,7 @@ function GetMarketInit(dbo, id) {
 				res(1);
 			})
 			.catch(error => {
-				console.log('errorMarketInit = ', error);
+				console.log('errorMarketInit = ', error.code);
 				marketInitDone = 0;
 				console.log('marketInitDone2 = ', marketInitDone);
 				errorCntr++;
@@ -1762,7 +1762,7 @@ function GetIntraDayPrice(day, inscode) {
 						})
 						.catch(error => {
 							intraDayRecvCntr++;
-							console.log('intraDayError = ', error);
+							console.log('intraDayError = ', error.code);
 							if (intraDayRecvCntr == intraDaySendCntr) {
 								console.log('intraDaySendCntr = ', intraDaySendCntr);
 								console.log('intraDayRecvCntr = ', intraDayRecvCntr);
@@ -1822,6 +1822,7 @@ function GetPClosingHist(dbo, id) {
 								}));
 
 							allRows[ind].hist = hist;
+                            console.log("hist = ", hist);
 							var row = dbo.collection('allRows').updateOne({name: v.name}, {$set: {hist: hist}});
 						})
 						.catch(error => {
