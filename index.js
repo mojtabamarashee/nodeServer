@@ -1340,7 +1340,7 @@ function GetMarketInit(dbo, id) {
 						esp = eps;
 						date = date;
 
-						dbo.collection('allRows').updateOne(
+						await dbo.collection('allRows').updateOne(
 							{name: name},
 							{
 								$set: {
