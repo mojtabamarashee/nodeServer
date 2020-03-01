@@ -106,11 +106,13 @@ async function main() {
 			}
 
 			if (idp == 1) {
-				await GetIntraDayPrice(dbo, id);
-				intraDayPriceCalls.forEach(v => {
-					if (v) v.cancel();
-				});
-				console.log('GetIntraDayPriceDone');
+				if (i % 60 == 0) {
+					await GetIntraDayPrice(dbo, id);
+					intraDayPriceCalls.forEach(v => {
+						if (v) v.cancel();
+					});
+					console.log('GetIntraDayPriceDone');
+				}
 			}
 
 			if (cth == 1) {
