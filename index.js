@@ -22,6 +22,10 @@ app.use(express.static('.'));
 let dbo, client;
 allRowsBuffer = [];
 
+function sleep(ms) {
+	return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function main() {
 	bd = 0;
 	cth = 0;
@@ -29,7 +33,7 @@ async function main() {
 	pch = 0;
 	cl = 0;
 	mi = 0;
-    pt = 0
+	pt = 0;
 
 	process.argv.forEach(function(val, index, array) {
 		if (val == 'bd') {
@@ -70,8 +74,7 @@ async function main() {
 		//await dbo.createCollection('allRows', async (err, res) => {});
 
 		let id = 1;
-		for (i = 0; i < 5; i++) {
-
+		for (i = 0; i < 1e10; i++) {
 			console.log('round = ', i);
 
 			if (pt == 1) {
@@ -117,7 +120,7 @@ async function main() {
 				});
 				console.log('GetClientTypeHistDone');
 			}
-
+			await sleep(2000);
 			//GetShakesHa();
 		}
 		setTimeout(() => {
