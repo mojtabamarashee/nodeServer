@@ -9,7 +9,7 @@ os = require('os');
 //var numeral = require('numeral');
 const express = require('express');
 var MongoClient = require('mongodb').MongoClient;
-
+let fast = 'http://www.tsetmc.com/tsev2/data/instinfofast.aspx?i=778253364357513&c=57+';
 //gloabl
 marketInitError = 1;
 marketInitDone = 0;
@@ -1534,7 +1534,7 @@ function GetClientTypeAll(dbo, id) {
 
 clientTypeHistCalls = [];
 function GetClientTypeHist(dbo, id) {
-	return new Promise(async (res, rej) => {
+	return new Promise((res, rej) => {
 		setTimeout(() => {
 			console.log('f3');
 			console.log('ctSendCntr = ', ctSendCntr);
@@ -1542,7 +1542,7 @@ function GetClientTypeHist(dbo, id) {
 			res(1);
 		}, 60000);
 
-		instAll.forEach((v, i) => {
+		instAll.forEach(async (v, i) => {
 			let ind = allRows.findIndex((v1, i1) => v1.name == v.name);
 			if (v.name.match(/^([^0-9]*)$/) && !allRows[ind].ctHist) {
 				url = 'http://tsetmc.com/tsev2/data/clienttype.aspx?i=' + v.inscode;
@@ -1551,24 +1551,31 @@ function GetClientTypeHist(dbo, id) {
 				axios
 					.get(url, {cancelToken: clientTypeHistCalls[ctSendCntr].token})
 					.then(async response => {
-						ctRecvCntr++;
-						//console.log('ctRecvCntr = ', ctRecvCntr);
-						console.log('ctOk = ', ctRecvCntr);
-						ctHist = response.data.split(';').slice(0, 30);
+						ctHist = response.data.split(';').map(v => v.split(','));
+						ctHist.forEach((v, i) => {
+							v.forEach((v1, i1) => {
+								ctHist[i][i1] = Number(v1);
+							});
+						});
+                        ctHist = ctHist.slice(0, 30)
 						allRows[ind].ctHist = ctHist;
+
 						await dbo.collection('allRows').updateOne({name: v.name}, {$set: {ctHist: ctHist}});
 
+						ctRecvCntr++;
+						console.log('ctOk = ', ctRecvCntr);
+
 						if (ctRecvCntr == ctSendCntr) {
-							console.log('res = ', res);
 							res(1);
 						}
 					})
 					.catch(error => {
+						if (error.code == 'Z_BUF_ERROR') {
+							allRows[ind].ctHist = [];
+						}
 						ctRecvCntr++;
-						//console.log('ctRecvCntr = ', ctRecvCntr);
 						console.log('ctError = ', error.code);
 						if (ctRecvCntr == ctSendCntr) {
-							console.log('res = ', res);
 							res(1);
 						}
 					});
@@ -1585,80 +1592,84 @@ function GetClientTypeHist(dbo, id) {
 }
 
 async function GetBodyValues(body, v, dbo) {
-	var regex = /LVal18AFC='(.*?)',D/g;
-	match = regex.exec(body);
-	try {
-		let name = match[1];
-
-		var regex = /,KAjCapValCpsIdx='(.*?)',P/g;
-		cntr = 0;
+	return new Promise(async (res, rej) => {
+		var regex = /LVal18AFC='(.*?)',D/g;
 		match = regex.exec(body);
-		floatVal = match[1];
-		let ind = allRows.findIndex((v1, i1) => v1.name == v.name);
+		try {
+			let name = match[1];
 
-		//var ma = /بازار پايه زرد فرابورس/g;
-		//bodies = body.split('<!doctype html>');
-		//var file = fs.createWriteStream('color.txt');
-		//allRows.forEach((v, i) => {
-		//  bd = bodies.find((v1, i1) => v1.match("InsCode='" + v.inscode));
-		//  //v.body = bd;
-		//  v.color = 'y';
-		//  //if (v.body.match(ma)) {
-		//  //	file.write(v.l18 + '\n');
-		//  //}
-		//});
+			var regex = /,KAjCapValCpsIdx='(.*?)',P/g;
+			cntr = 0;
+			match = regex.exec(body);
+			floatVal = match[1];
+			let ind = allRows.findIndex((v1, i1) => v1.name == v.name);
 
-		var regex = /,ZTitad=(.*?),CI/g;
-		cntr = 0;
-		match = regex.exec(body);
-		totalVol = match[1];
+			//var ma = /بازار پايه زرد فرابورس/g;
+			//bodies = body.split('<!doctype html>');
+			//var file = fs.createWriteStream('color.txt');
+			//allRows.forEach((v, i) => {
+			//  bd = bodies.find((v1, i1) => v1.match("InsCode='" + v.inscode));
+			//  //v.body = bd;
+			//  v.color = 'y';
+			//  //if (v.body.match(ma)) {
+			//  //	file.write(v.l18 + '\n');
+			//  //}
+			//});
 
-		var regex = /,InsCode='(.*?)',B/g;
-		match = regex.exec(body);
-		insCode = match[1];
+			var regex = /,ZTitad=(.*?),CI/g;
+			cntr = 0;
+			match = regex.exec(body);
+			totalVol = match[1];
 
-		var regex = /,SectorPE='(.*?)',KAjC/g;
-		match = regex.exec(body);
-		sectorPE = match[1];
+			var regex = /,InsCode='(.*?)',B/g;
+			match = regex.exec(body);
+			insCode = match[1];
 
-		var regex = /LSecVal='(.*?)',Cg/g;
-		match = regex.exec(body);
-		csName = match[1];
+			var regex = /,SectorPE='(.*?)',KAjC/g;
+			match = regex.exec(body);
+			sectorPE = match[1];
 
-		var regex = /QTotTran5JAvg='(.*?)',SectorPE/g;
-		match = regex.exec(body);
-		QTotTran5JAvg = match[1];
-		console.log('QTotTran5JAvg = ', QTotTran5JAvg);
+			var regex = /LSecVal='(.*?)',Cg/g;
+			match = regex.exec(body);
+			csName = match[1];
 
-		var regex = /,Title='.*',Fa/g;
-		match = regex.exec(body);
-		if (match[0].match('زرد')) {
-			color = 'yellow';
-		} else if (match[0].match('قرمز')) {
-			color = 'red';
-		} else if (match[0].match('نارنج')) {
-			color = 'orange';
-		} else {
-			color = 'black';
-		}
+			var regex = /QTotTran5JAvg='(.*?)',SectorPE/g;
+			match = regex.exec(body);
+			QTotTran5JAvg = match[1];
 
-		await dbo.collection('allRows').updateOne(
-			{name: v.name},
-			{
-				$set: {
-					floatVal: floatVal,
-					totalVol: totalVol,
-					sectorPE: sectorPE,
-					csName: csName,
-					QTotTran5JAvg: QTotTran5JAvg,
-					color: color,
-					body: 1,
+			var regex = /,Title='.*',Fa/g;
+			match = regex.exec(body);
+			if (match[0].match('زرد')) {
+				color = 'yellow';
+			} else if (match[0].match('قرمز')) {
+				color = 'red';
+			} else if (match[0].match('نارنج')) {
+				color = 'orange';
+			} else {
+				color = 'black';
+			}
+
+			await dbo.collection('allRows').updateOne(
+				{name: v.name},
+				{
+					$set: {
+						floatVal: floatVal,
+						totalVol: totalVol,
+						sectorPE: sectorPE,
+						csName: csName,
+						QTotTran5JAvg: QTotTran5JAvg,
+						color: color,
+						body: 1,
+					},
 				},
-			},
-		);
-	} catch (e) {
-		console.log('catch bodyError = ', e);
-	}
+			);
+			console.log('res = ', res);
+			res(1);
+		} catch (e) {
+			console.log('catch bodyError = ', e);
+			res(1);
+		}
+	});
 }
 
 bodyCalls = [];
@@ -1677,11 +1688,11 @@ function GetBody(dbo, id) {
 				bodyCalls[bodySendCntr] = axios.CancelToken.source();
 				axios
 					.get(url, {cancelToken: bodyCalls[bodySendCntr].token})
-					.then(response => {
+					.then(async response => {
+						allRows[ind].body = 1;
+						await GetBodyValues(response.data, v, dbo);
 						bodyRecvCntr++;
 						console.log('bodyOk = ', bodyRecvCntr);
-						allRows[ind].body = 1;
-						GetBodyValues(response.data, v, dbo);
 						if (bodyRecvCntr == bodySendCntr) {
 							console.log('bodySendCntr = ', bodySendCntr);
 							console.log('bodyRecvCntr = ', bodyRecvCntr);
@@ -1777,7 +1788,7 @@ function GetIntraDayPrice(day, inscode) {
 			console.log('intraDaySendCntr = ', intraDaySendCntr);
 			console.log('intraDayRecvCntr = ', intraDayRecvCntr);
 			res(1);
-		}, 60000);
+		}, 120000);
 
 		instAll.forEach(async (v, i) => {
 			let ind = allRows.findIndex((v1, i1) => v1.name == v.name);
@@ -1788,8 +1799,6 @@ function GetIntraDayPrice(day, inscode) {
 					axios
 						.get(url, {cancelToken: intraDayPriceCalls[intraDaySendCntr].token})
 						.then(async response => {
-							intraDayRecvCntr++;
-							console.log('intraDayOk = ', intraDayRecvCntr);
 							if (intraDayRecvCntr == intraDaySendCntr) {
 								console.log('intraDaySendCntr = ', intraDaySendCntr);
 								console.log('intraDayRecvCntr = ', intraDayRecvCntr);
@@ -1809,6 +1818,9 @@ function GetIntraDayPrice(day, inscode) {
 							var row = await dbo
 								.collection('allRows')
 								.updateOne({name: v.name}, {$set: {intraDayPrice: intraDayPrice}});
+
+							intraDayRecvCntr++;
+							console.log('intraDayOk = ', intraDayRecvCntr);
 						})
 						.catch(error => {
 							intraDayRecvCntr++;
@@ -1842,11 +1854,6 @@ function GetPClosingHist(dbo, id) {
 			console.log('pClosingRecvCntr = ', pClosingRecvCntr);
 			res(1);
 		}, 60000);
-		//let t = await dbo
-		//  .collection('allRows')
-		//  .find({symbols: {$exists: true}})
-		//  .toArray();
-		//allRows = t[0].symbols;
 
 		instAll.forEach(async (v, i) => {
 			let ind = allRows.findIndex((v1, i1) => v1.name == v.name);
@@ -1857,9 +1864,7 @@ function GetPClosingHist(dbo, id) {
 					pClosingHistCalls[pClosingSendCntr] = axios.CancelToken.source();
 					axios
 						.get(url, {cancelToken: pClosingHistCalls[pClosingSendCntr].token})
-						.then(response => {
-							pClosingRecvCntr++;
-							console.log('pclosingOk = ', pClosingRecvCntr);
+						.then(async response => {
 							if (pClosingRecvCntr == pClosingSendCntr) {
 								console.log('pClosingSendCntr = ', pClosingSendCntr);
 								console.log('pClosingRecvCntr = ', pClosingRecvCntr);
@@ -1877,7 +1882,9 @@ function GetPClosingHist(dbo, id) {
 
 							allRows[ind].hist = hist;
 							//console.log("hist = ", hist);
-							var row = dbo.collection('allRows').updateOne({name: v.name}, {$set: {hist: hist}});
+							var row = await dbo.collection('allRows').updateOne({name: v.name}, {$set: {hist: hist}});
+							pClosingRecvCntr++;
+							console.log('pclosingOk = ', pClosingRecvCntr);
 						})
 						.catch(error => {
 							pClosingRecvCntr++;

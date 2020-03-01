@@ -205,7 +205,6 @@ function Draw(dataa, id, timeFormat, tmin, tmax) {
 		.call(d3.axisLeft(y).ticks(5));
 }
 
-
 function DrawMoneyFlow(dataa, id) {
 	let data = [];
 	for (i = 0; i < dataa.length; i++) {
@@ -223,48 +222,83 @@ function DrawMoneyFlow(dataa, id) {
 		.append('g')
 		.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
-	var x = d3.scaleTime().range([0, width]);
-	var y = d3.scaleLinear().range([height, 0]);
 
 	//vol data
-	const volData = data.map(v=>(v.split(',')));
-    console.log("volData = ", volData);
+	const volData = data.reverse();
+	console.log('volData = ', volData);
+
+
 	const yMinVolume = d3.min(volData, d => {
-		return (Number(d[5]) - Number(d[6]));
+		return d[9] - d[11];
 	});
 	const yMaxVolume = d3.max(volData, d => {
-		return (Number(d[5]) - Number(d[6]));
+		return d[9] - d[11];
 	});
 	console.log('yMaxVolume = ', yMaxVolume);
+	console.log('yMinVolume = ', yMinVolume);
 
 	const yVolumeScale = d3
 		.scaleLinear()
 		.domain([yMinVolume, yMaxVolume])
 		.range([height, 0]);
 
+
+	var x = d3.scaleTime().range([0, width]);
+	var y = d3.scaleLinear().range([height , 0]);
+
+	x.domain(
+		d3.extent(data, function(d) {
+			return d[0];
+		}),
+	);
+
+	y.domain([
+		d3.min(data, function(d) {
+			return d[9] - d[11];
+		}),
+		d3.max(data, function(d) {
+			return d[9] - d[11];
+		}),
+	]);
+	// Add the X Axis
+	svg.append('g')
+		.attr('transform', 'translate(0,' + height + ')')
+		.style('font', '30px times')
+		.call(
+			d3
+				.axisBottom(x)
+				.ticks(5)
+				.tickFormat(d =>
+					new Date(d)
+						.toLocaleTimeString('fa-IR', {year: '2-digit', month: '2-digit'})
+						.replace('،‏ ۰:۰۰:۰۰', ''),
+				),
+		);
+
+	// Add the Y Axis
+	svg.append('g')
+		.style('font', '8px times')
+		.call(d3.axisLeft(y).ticks(5));
+
 	svg.selectAll()
 		.data(volData)
 		.enter()
 		.append('rect')
 		.attr('x', d => {
-			return x(Number(d[0]));
+			return x(d[0]);
 		})
 		.attr('y', d => {
-			return yVolumeScale(Number(d[5]) - Number(d[6]));
+			return yVolumeScale(d[9] - d[11]);
 		})
-		//.attr('fill', (d, i) => {
-		//	if (i === 0) {
-		//		return '#03a678';
-		//	} else {
-		//		return volData[i - 1].pl > d.pl ? '#c0392b' : '#03a678';
-		//	}
-		//})
-		//.attr('width', 1)
-		//.attr('height', d => {
-		//	return height - yVolumeScale(d['vol']);
-		//});
+		.attr('fill', (d, i) => {
+			return d[9] - d[11] > 0 ? '#03a678' : '#c0392b';
+		})
+		.attr('width', 10)
+		.attr('height', d => {
+			return height - Math.abs(yVolumeScale(d[9] - d[11]));
+		});
+	console.log('volData = ', volData);
 }
-
 
 function ChangeDate(num) {
 	interval = num;
@@ -351,9 +385,14 @@ axios.get('http://filterbourse.ir/hist/' + inscode).then(response => {
 		Draw(temp, '#one-day', '%H:%M', tmin, tmax);
 	}
 
-
-    console.log("ctHist = ", response.data.ctHist);
-	DrawMoneyFlow(response.data.ctHist, '#money-flow');
+	temp = JSON.parse(JSON.stringify(response.data.ctHist));
+	var parseTime = d3.timeParse('%Y-%m-%d');
+	temp.forEach(function(d, i) {
+		temp[i][0] = parseTime(
+			d[0].toString().slice(0, 4) + '-' + d[0].toString().slice(4, 6) + '-' + d[0].toString().slice(6, 8),
+		);
+	});
+	DrawMoneyFlow(temp, '#money-flow');
 });
 
 axios.get('http://filterbourse.ir/api/names').then(response => {
