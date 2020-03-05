@@ -222,11 +222,9 @@ function DrawMoneyFlow(dataa, id) {
 		.append('g')
 		.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
-
 	//vol data
 	const volData = data.reverse();
 	console.log('volData = ', volData);
-
 
 	const yMinVolume = d3.min(volData, d => {
 		return d[9] - d[11];
@@ -242,9 +240,8 @@ function DrawMoneyFlow(dataa, id) {
 		.domain([yMinVolume, yMaxVolume])
 		.range([height, 0]);
 
-
 	var x = d3.scaleTime().range([0, width]);
-	var y = d3.scaleLinear().range([height , 0]);
+	var y = d3.scaleLinear().range([height, 0]);
 
 	x.domain(
 		d3.extent(data, function(d) {
@@ -263,22 +260,27 @@ function DrawMoneyFlow(dataa, id) {
 	// Add the X Axis
 	svg.append('g')
 		.attr('transform', 'translate(0,' + height + ')')
-		.style('font', '30px times')
+		.style('font', '25px times')
 		.call(
 			d3
 				.axisBottom(x)
 				.ticks(5)
 				.tickFormat(d =>
 					new Date(d)
-						.toLocaleTimeString('fa-IR', {year: '2-digit', month: '2-digit'})
+						.toLocaleTimeString('fa-IR', {year: '2-digit', month: '2-digit', day:'2-digit'})
 						.replace('،‏ ۰:۰۰:۰۰', ''),
 				),
 		);
 
 	// Add the Y Axis
 	svg.append('g')
-		.style('font', '8px times')
-		.call(d3.axisLeft(y).ticks(5));
+		.style('font', '25px times')
+		.call(d3.axisLeft(y).ticks(5)
+            
+				.tickFormat(d =>
+					Math.round(d / 1e9 * 10) / 10 + 'B'
+				),
+            );
 
 	svg.selectAll()
 		.data(volData)
@@ -288,16 +290,27 @@ function DrawMoneyFlow(dataa, id) {
 			return x(d[0]);
 		})
 		.attr('y', d => {
-			return yVolumeScale(d[9] - d[11]);
+			if (d[9] - d[11] < 0) return yVolumeScale(0);
+			else return yVolumeScale(d[9] - d[11]);
 		})
 		.attr('fill', (d, i) => {
 			return d[9] - d[11] > 0 ? '#03a678' : '#c0392b';
 		})
 		.attr('width', 10)
 		.attr('height', d => {
-			return height - Math.abs(yVolumeScale(d[9] - d[11]));
+            if(d[9] - d[11] < 0)
+			return height - yVolumeScale(d[9] - d[11]);
+        else 
+			return height - yVolumeScale(d[9] - d[11]) - (yVolumeScale(yMinVolume) - yVolumeScale(0));
 		});
-	console.log('volData = ', volData);
+
+	svg.append('line')
+		.style('stroke', 'black')
+		.style('stroke-width', 5)
+		.attr('x1', x(volData[0][0]))
+		.attr('y1', yVolumeScale(0)) //start of the line
+		.attr('x2', x(volData[volData.length - 1][0]))
+		.attr('y2', yVolumeScale(0));
 }
 
 function ChangeDate(num) {
