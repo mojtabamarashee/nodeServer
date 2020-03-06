@@ -68,6 +68,14 @@ async function main() {
       res.send(names);
     });
 
+    app.get('/api/allRows', async (req, res) => {
+      var row = await dbo
+        .collection('allRows')
+        .find()
+        .toArray();
+      res.send(row);
+    });
+
     app.get('/:name', async (req, res) => {
       var row = await dbo
         .collection('allRows')
