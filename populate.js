@@ -83,13 +83,11 @@ async function main() {
 		}
 
 		if (idp == 1) {
-			if (i % 60 == 0) {
-				await GetIntraDayPrice(dbo, id);
-				intraDayPriceCalls.forEach(v => {
-					if (v) v.cancel();
-				});
-				console.log('GetIntraDayPriceDone');
-			}
+			await GetIntraDayPrice(dbo, id);
+			intraDayPriceCalls.forEach(v => {
+				if (v) v.cancel();
+			});
+			console.log('GetIntraDayPriceDone');
 		}
 
 		if (cth == 1) {
@@ -1202,12 +1200,11 @@ function GetMarketInit(dbo, id) {
 				response.data.split(';').map(async (v, i) => {
 					successCntr++;
 					t = v.split(',');
-                    if(i == 0)
-                    {
-                        miDate = t[2].replace(/.*@/, '')
-                        miDate = miDate.replace(/ .*/, '')
-                        console.log("miDate = ", miDate);
-                    }
+					if (i == 0) {
+						miDate = t[2].replace(/.*@/, '');
+						miDate = miDate.replace(/ .*/, '');
+						console.log('miDate = ', miDate);
+					}
 					if (t[1].match(/^IR/)) {
 						inscode = t[0];
 						l18 = t[2];
