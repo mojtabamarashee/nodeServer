@@ -430,3 +430,10 @@ function numeral(tvol) {
 		return Math.round((tvol / 1e3) * 10) / 10 + 'K';
 	}
 }
+
+
+function PlotReal(){
+}
+
+
+

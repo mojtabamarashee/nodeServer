@@ -18,7 +18,7 @@ pClosingDone = 0;
 allRowsBuffer = [];
 
 function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+	return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 main();
@@ -71,10 +71,7 @@ async function main() {
 
 		if (mi == 1) {
 			await GetMarketInit(dbo, id);
-			console.log('marketInitDone3 = ', marketInitDone);
-
 			await GetClientTypeAll(dbo, id);
-			console.log('marketInitDone3 = ', marketInitDone);
 		}
 
 		if (pch == 1) {
@@ -1157,6 +1154,7 @@ bodyRecvCntr = 0;
 histError = 0;
 intraDaySendCntr = 0;
 intraDayRecvCntr = 0;
+marketInitRecvCntr = 0;
 
 let globalCntr = 0;
 
@@ -1192,21 +1190,24 @@ function GetMarketInit(dbo, id) {
 		let url = 'http://www.tsetmc.com/tsev2/data/MarketWatchInit.aspx?h=0&r=0';
 		let error = 1;
 
-		//let t = await dbo
-		//  .collection('allRows')
-		//  .find({symbols: {$exists: true}})
-		//  .toArray();
-		//symbols = t[0].symbols;
-
 		date = GetDate();
 		axios
 			.get(url, {
 				headers: typicalHeader,
 			})
 			.then(async response => {
+				marketInitSendCntr = response.data.split(';').length - 1;
+				console.log('marketInitSendCntr = ', marketInitSendCntr);
+				marketInitRecvCntr = 0;
 				response.data.split(';').map(async (v, i) => {
 					successCntr++;
 					t = v.split(',');
+                    if(i == 0)
+                    {
+                        miDate = t[2].replace(/.*@/, '')
+                        miDate = miDate.replace(/ .*/, '')
+                        console.log("miDate = ", miDate);
+                    }
 					if (t[1].match(/^IR/)) {
 						inscode = t[0];
 						l18 = t[2];
@@ -1271,10 +1272,16 @@ function GetMarketInit(dbo, id) {
 									id: id,
 									pe: pe,
 									esp: eps,
-									date: date,
+									date: miDate,
 								},
 							},
 						);
+						marketInitRecvCntr++;
+						console.log('marketInitRecvCntr = ', marketInitRecvCntr);
+						if (marketInitRecvCntr == marketInitSendCntr) {
+							console.log('marketInitDone');
+							res(1);
+						}
 
 						marketInitDone = 1;
 					} else {
@@ -1299,6 +1306,12 @@ function GetMarketInit(dbo, id) {
 									},
 								},
 							);
+							marketInitRecvCntr++;
+							console.log('marketInitRecvCntr = ', marketInitRecvCntr);
+							if (marketInitRecvCntr == marketInitSendCntr) {
+								console.log('marketInitDone');
+								res(1);
+							}
 						} else if (t[1] == 2) {
 							qo2 = t[5]; //gh kharid
 							po2 = t[6]; //gh forush
@@ -1317,6 +1330,12 @@ function GetMarketInit(dbo, id) {
 									},
 								},
 							);
+							marketInitRecvCntr++;
+							console.log('marketInitRecvCntr = ', marketInitRecvCntr);
+							if (marketInitRecvCntr == marketInitSendCntr) {
+								console.log('marketInitDone');
+								res(1);
+							}
 						} else if (t[1] == 3) {
 							qo3 = t[5]; //gh kharid
 							po3 = t[6]; //gh forush
@@ -1340,20 +1359,30 @@ function GetMarketInit(dbo, id) {
 									},
 								},
 							);
+							marketInitRecvCntr++;
+							console.log('marketInitRecvCntr = ', marketInitRecvCntr);
+							if (marketInitRecvCntr == marketInitSendCntr) {
+								console.log('marketInitDone');
+								res(1);
+							}
 						}
 					}
 				});
-				console.log('marketInitDone1 = ', marketInitDone);
 
-				res(1);
+				//res(1);
 			})
 			.catch(error => {
 				if (error.code) console.log('errorMarketInit = ', error.code);
 				else {
 					console.log('error = ', error);
 				}
+				marketInitRecvCntr++;
+				console.log('marketInitRecvCntr = ', marketInitRecvCntr);
+				if (marketInitRecvCntr == marketInitSendCntr) {
+					console.log('marketInitDone');
+					res(1);
+				}
 				marketInitDone = 0;
-				console.log('marketInitDone2 = ', marketInitDone);
 				errorCntr++;
 			});
 	});
@@ -1437,7 +1466,7 @@ function GetClientTypeAll(dbo, id) {
 						},
 					);
 				});
-				console.log('ClientTypeAllDone1 = ', clientTypeAllDone);
+				//console.log('ClientTypeAllDone1 = ', clientTypeAllDone);
 				res(1);
 			})
 			.catch(error => {
