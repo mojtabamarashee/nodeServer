@@ -224,7 +224,6 @@ function DrawMoneyFlow(dataa, id) {
 
 	//vol data
 	const volData = data.reverse();
-	console.log('volData = ', volData);
 
 	const yMinVolume = d3.min(volData, d => {
 		return d[9] - d[11];
@@ -299,11 +298,12 @@ function DrawMoneyFlow(dataa, id) {
 		.attr('width', 10)
 		.attr('height', d => {
             if(d[9] - d[11] < 0)
-			return height - yVolumeScale(d[9] - d[11]);
+			return yVolumeScale(d[9] - d[11]) - yVolumeScale(0);
         else 
 			return height - yVolumeScale(d[9] - d[11]) - (yVolumeScale(yMinVolume) - yVolumeScale(0));
 		});
 
+	console.log('volData = ', volData[29][9] - volData[29][11]);
 	svg.append('line')
 		.style('stroke', 'black')
 		.style('stroke-width', 5)
@@ -405,6 +405,7 @@ axios.get('http://filterbourse.ir/hist/' + inscode).then(response => {
 			d[0].toString().slice(0, 4) + '-' + d[0].toString().slice(4, 6) + '-' + d[0].toString().slice(6, 8),
 		);
 	});
+    console.log("temp = ", temp);
 	DrawMoneyFlow(temp, '#money-flow');
 });
 
