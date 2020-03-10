@@ -266,7 +266,7 @@ function DrawMoneyFlow(dataa, id) {
 				.ticks(5)
 				.tickFormat(d =>
 					new Date(d)
-						.toLocaleTimeString('fa-IR', {year: '2-digit', month: '2-digit', day:'2-digit'})
+						.toLocaleTimeString('fa-IR', {year: '2-digit', month: '2-digit', day: '2-digit'})
 						.replace('،‏ ۰:۰۰:۰۰', ''),
 				),
 		);
@@ -274,12 +274,13 @@ function DrawMoneyFlow(dataa, id) {
 	// Add the Y Axis
 	svg.append('g')
 		.style('font', '25px times')
-		.call(d3.axisLeft(y).ticks(5)
-            
-				.tickFormat(d =>
-					Math.round(d / 1e9 * 10) / 10 + 'B'
-				),
-            );
+		.call(
+			d3
+				.axisLeft(y)
+				.ticks(5)
+
+				.tickFormat(d => Math.round((d / 1e9) * 10) / 10 + 'B'),
+		);
 
 	svg.selectAll()
 		.data(volData)
@@ -297,10 +298,8 @@ function DrawMoneyFlow(dataa, id) {
 		})
 		.attr('width', 10)
 		.attr('height', d => {
-            if(d[9] - d[11] < 0)
-			return yVolumeScale(d[9] - d[11]) - yVolumeScale(0);
-        else 
-			return height - yVolumeScale(d[9] - d[11]) - (yVolumeScale(yMinVolume) - yVolumeScale(0));
+			if (d[9] - d[11] < 0) return yVolumeScale(d[9] - d[11]) - yVolumeScale(0);
+			else return height - yVolumeScale(d[9] - d[11]) - (yVolumeScale(yMinVolume) - yVolumeScale(0));
 		});
 
 	console.log('volData = ', volData[29][9] - volData[29][11]);
@@ -333,6 +332,9 @@ axios.get('http://filterbourse.ir/hist/' + inscode).then(response => {
 	tmed = Number(response.data.tmed);
 	tmin = Number(response.data.tmin);
 	tmax = Number(response.data.tmax);
+
+	pe = response.data.pe;
+	sectorPE = response.data.sectorPE;
 
 	pc = response.data.pc;
 	pcp = Math.round(((pc - tmed) / tmed) * 100 * 100) / 100;
@@ -371,6 +373,10 @@ axios.get('http://filterbourse.ir/hist/' + inscode).then(response => {
 		.text(Math.round((tvol / tvolp) * 10) / 10)
 		.css('color', Number(tvol) > Number(tvolp) ? 'green' : 'red');
 
+	$('#pe').text(pe);
+	$('#sec-pe').text(sectorPE);
+
+
 	if (hist) {
 		let temp = JSON.parse(JSON.stringify(hist));
 		temp = temp.slice(len - interval, len - 1);
@@ -405,7 +411,7 @@ axios.get('http://filterbourse.ir/hist/' + inscode).then(response => {
 			d[0].toString().slice(0, 4) + '-' + d[0].toString().slice(4, 6) + '-' + d[0].toString().slice(6, 8),
 		);
 	});
-    console.log("temp = ", temp);
+	console.log('temp = ', temp);
 	DrawMoneyFlow(temp, '#money-flow');
 });
 
@@ -432,9 +438,4 @@ function numeral(tvol) {
 	}
 }
 
-
-function PlotReal(){
-}
-
-
-
+function PlotReal() {}
