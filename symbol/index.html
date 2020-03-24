@@ -47,9 +47,11 @@
     <meta charset="UTF-8" />
     <title id="title"> </title>
     <link rel="stylesheet" href="symbol/style.css" />
+    <script src="https://use.fontawesome.com/6edc47e3c9.js"></script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"></div> 
+    <i class="fa fa-eye fa-3x " id='watch-list'></i>
     <div dir="rtl">
       <div style="margin:20px 20px 0 0" class="ui-widget">
         <label style="font-size:30px;height:50px; width:300px" for="tags"
@@ -98,8 +100,8 @@
           >
           <input type="radio" name="day" id="7d" />
 
-          <label for="1M" style="font-size:28px">1M</label>
-          <input type="radio" name="day" id="1M" />
+          <label for="1M" style="font-size:28px" onclick="console.log('s')">1M</label>
+          <input type="radio" name="day" id="1M" onclick="PlotHist(30)" />
 
           <label for="2M" style="font-size:28px">2M</label>
           <input type="radio" name="day" id="2M" />
