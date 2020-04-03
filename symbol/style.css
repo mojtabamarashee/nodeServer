@@ -12,6 +12,9 @@ body {
     font-size:30px!important;
 }
 
+.ui-menu-item {
+    font-size:30px;
+}
 #tags:active {
     box-shadow: 0 0 30px #96f226
 }

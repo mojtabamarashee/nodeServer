@@ -18,21 +18,29 @@ app.use(compression());
 app.use(express.static('.'));
 let dbo, client;
 
-
 async function main() {
-
   if (mode == 'LOCAL') mongoUrl = 'mongodb://localhost:27017';
   if (mode == 'SERVER')
     mongoUrl =
       'mongodb://filterbo_database:11111aaaaa@localhost:27017/filterbo_database';
 
- // mongoUrl =
- //   'mongodb://filterbo_database:11111aaaaa@filterbourse.ir:27017/filterbo_database';
+  // mongoUrl =
+  //   'mongodb://filterbo_database:11111aaaaa@filterbourse.ir:27017/filterbo_database';
   if (mode == 'POPULATE_DB')
     mongoUrl =
       'mongodb://filterbo_database:11111aaaaa@filterbourse.ir:27017/filterbo_database';
 
   await ConnectToDB();
+
+  //var row = await dbo
+  //  .collection('allRows')
+  //  .find()
+  //  .toArray()
+  //  .forEach(v => {
+  //    v.hist = [1];
+  //    v.ctHist = [1];
+  //  });
+
   if (mode == 'SERVER') {
     console.log('mode = ', mode);
     html = fs.readFileSync('symbol/index.html');
@@ -96,8 +104,9 @@ async function main() {
 main();
 
 async function ConnectToDB() {
-let mongoUrl = 'mongodb://filterbo_database:11111aaaaa@filterbourse.ir:27017/filterbo_database';
-      console.log("mongoUrl = ", mongoUrl);
+  let mongoUrl =
+    'mongodb://filterbo_database:11111aaaaa@filterbourse.ir:27017/filterbo_database';
+  console.log('mongoUrl = ', mongoUrl);
   return new Promise((res, rej) => {
     MongoClient.connect(
       mongoUrl,
@@ -111,4 +120,3 @@ let mongoUrl = 'mongodb://filterbo_database:11111aaaaa@filterbourse.ir:27017/fil
     );
   });
 }
-

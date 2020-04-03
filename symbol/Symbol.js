@@ -1,12 +1,23 @@
 //inscode = '318005355896147';
 
 function GetWatchList() {
-  watchList = localStorage.getItem('watchList');
+  watchList = JSON.parse(localStorage.getItem('watchList'));
+  if (!watchList) {
+    watchList = [0];
+  }
+
+  iterateList = JSON.parse(localStorage.getItem('iterateList'));
+  if (iterateList) {
+    iterateListIndex = JSON.parse(localStorage.getItem('iterateListIndex'));
+  }
+  console.log('iterateList = ', iterateList);
 }
+
 GetWatchList();
 let drawHistFirstFlag = 0;
+
 function DrawHist(dataa, id, timeFormat) {
-  var margin = {top: 20, right: 50, bottom: 30, left: 80},
+  var margin = {top: 20, right: 50, bottom: 90, left: 80},
     width = 960 - margin.left - margin.right,
     height = 500 - margin.top - margin.bottom;
 
@@ -19,6 +30,27 @@ function DrawHist(dataa, id, timeFormat) {
       .append('g')
       .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
     drawHistFirstFlag = 1;
+
+    // Add the valueline path.
+    svg
+      .append('path')
+      .attr('class', 'line')
+      .style('stroke-width', 5);
+
+    // Add the X Axis
+    svg
+      .append('g')
+      .attr('transform', 'translate(0,' + height + ')')
+      .attr('class', 'x axis')
+      .style('font', '25px times');
+
+    // Add the Y Axis
+    svg
+      .append('g')
+      .attr('class', 'y axis')
+      .style('font', '25px times');
+
+    svg.append('rect').attr('class', 'rect');
   }
 
   var x = d3.scaleTime().range([0, width]);
@@ -42,65 +74,95 @@ function DrawHist(dataa, id, timeFormat) {
       return d.date;
     }),
   );
-  y.domain([
-    0,
-    d3.max(data, function(d) {
-      return d.pl;
-    }),
-  ]);
+  let minn = d3.min(data, function(d) {
+    return d.pl;
+  });
+  let maxx = d3.max(data, function(d) {
+    return d.pl;
+  });
+
+  y.domain([minn - (maxx - minn) * 0.1, maxx]);
 
   // Add the valueline path.
   svg
-    .append('path')
+    .select('.line')
     .data([data])
-    .attr('class', 'line')
     .attr('d', valueline);
 
   // Add the X Axis
   svg
-    .append('g')
-    .attr('transform', 'translate(0,' + height + ')')
-    .style('font', '20px times')
+    .select('.x.axis')
     .call(
       d3
         .axisBottom(x)
-        .ticks(5)
+        .ticks(10)
         .tickFormat(d =>
           new Date(d)
-            .toLocaleTimeString('fa-IR', {year: '2-digit', month: '2-digit'})
+            .toLocaleTimeString('fa-IR', {
+              year: '2-digit',
+              month: '2-digit',
+              day: '2-digit',
+            })
             .replace('،‏ ۰:۰۰:۰۰', ''),
         ),
-    );
+    )
+    .selectAll('text')
+    .attr('y', 0)
+    .attr('x', 9)
+    .attr('dy', '.35em')
+    .attr('transform', 'rotate(65)')
+    .style('text-anchor', 'start');
 
   // Add the Y Axis
+
+  const yMin = d3.min(data, d => {
+    return Math.min(d['pl']);
+  });
+  const yMax = d3.max(data, d => {
+    return Math.max(d['pl']);
+  });
+  console.log('yMax = ', yMax);
+
   svg
-    .append('g')
-    .style('font', '25px times')
-    .call(d3.axisLeft(y).ticks(5));
-  //});
+    .select('.y.axis')
+    //.style('font', '25px times')
+    .call(
+      d3
+        .axisLeft(y)
+        .ticks(5)
+        .tickFormat(d => {
+          if (yMax >= 100000) {
+            return Math.round((d / 1000) * 10) / 10 + 'k';
+          } else {
+            return d;
+          }
+        }),
+    );
 
   //vol data
-
   const volData = data;
-  console.log('volData = ', volData);
   const yMinVolume = d3.min(volData, d => {
     return Math.min(d['vol']);
   });
   const yMaxVolume = d3.max(volData, d => {
     return Math.max(d['vol']);
   });
-  console.log('yMaxVolume = ', yMaxVolume);
 
   const yVolumeScale = d3
     .scaleLinear()
     .domain([yMinVolume, yMaxVolume])
     .range([height, 0]);
 
+  var bars = svg
+    .selectAll('.bar')
+    .remove()
+    .exit();
   svg
     .selectAll()
     .data(volData)
     .enter()
     .append('rect')
+    .attr('class', 'bar')
     .attr('x', d => {
       return x(d['date']);
     })
@@ -121,7 +183,6 @@ function DrawHist(dataa, id, timeFormat) {
 }
 
 function Draw(dataa, id, timeFormat, tmin, tmax) {
-  console.log('tmed = ', tmed);
   let data = [];
   for (i = 0; i < dataa.length; i++) {
     data[i] = dataa[i];
@@ -247,8 +308,6 @@ function DrawMoneyFlow(dataa, id) {
   const yMaxVolume = d3.max(volData, d => {
     return d[9] - d[11];
   });
-  console.log('yMaxVolume = ', yMaxVolume);
-  console.log('yMinVolume = ', yMinVolume);
 
   const yVolumeScale = d3
     .scaleLinear()
@@ -330,7 +389,6 @@ function DrawMoneyFlow(dataa, id) {
         );
     });
 
-  console.log('volData = ', volData[29][9] - volData[29][11]);
   svg
     .append('line')
     .style('stroke', 'black')
@@ -341,102 +399,181 @@ function DrawMoneyFlow(dataa, id) {
     .attr('y2', yVolumeScale(0));
 }
 
-function ChangeDate(num) {
-  interval = num;
-  console.log('interval = ', interval);
-  len = hist.length;
-  console.log('hist = ', hist);
-  const temp = JSON.parse(JSON.stringify(hist));
-  let temp2 = temp.slice(len - interval, len);
-}
-
 let hist;
-axios.get('http://filterbourse.ir/hist/' + inscode).then(response => {
-  name = response.data.name;
-  fullName = response.data.fullName;
-  csName = response.data.csName;
+let adjusted = 1;
+let log = 0;
+let interval = 360;
 
-  hist = response.data.hist;
-  if (hist) len = response.data.hist.length;
+$(document).ready(function() {
+  axios.get('http://filterbourse.ir/hist/' + inscode).then(response => {
+    name = response.data.name;
+    fullName = response.data.fullName;
+    csName = response.data.csName;
 
-  tmed = Number(response.data.tmed);
-  tmin = Number(response.data.tmin);
-  tmax = Number(response.data.tmax);
+    hist = response.data.hist;
+    date = response.data.date;
+    pl = response.data.pl;
+    pc = response.data.pc;
 
-  pe = response.data.pe;
-  sectorPE = response.data.sectorPE;
+    Buy_CountI = Number(response.data.Buy_CountI);
+    Buy_I_Volume = Number(response.data.Buy_I_Volume);
+    Buy_CountN = Number(response.data.Buy_CountN);
+    Buy_N_Volume = Number(response.data.Buy_N_Volume);
 
-  pc = response.data.pc;
-  pcp = Math.round(((pc - tmed) / tmed) * 100 * 100) / 100;
+    Sell_CountI = Number(response.data.Sell_CountI);
+    Sell_I_Volume = Number(response.data.Sell_I_Volume);
+    Sell_CountN = Number(response.data.Sell_CountN);
+    Sell_N_Volume = Number(response.data.Sell_N_Volume);
 
-  pl = response.data.pl;
-  plp = Math.round(((pl - tmed) / tmed) * 100 * 100) / 100;
+    if (hist) len = response.data.hist.length;
 
-  tvol = response.data.tvol;
-  console.log('tvol = ', tvol);
-  tvolp = response.data.QTotTran5JAvg;
+    histNotAdj = response.data.histNotAdj;
 
-  $('#title').text(name + '-' + pc);
-  $('#name').text(name);
-  $('#full-name').text('(' + fullName + ')');
-  $('#cs-name').text(csName);
+    tmed = Number(response.data.tmed);
+    tmin = Number(response.data.tmin);
+    tmax = Number(response.data.tmax);
 
-  $('#pc')
-    .text(pc)
-    .css('color', pc > tmed ? 'green' : 'red');
-  $('#pcp')
-    .text('(' + pcp + ')')
-    .css('color', pcp > 0 ? 'green' : 'red');
+    pe = response.data.pe;
+    sectorPE = response.data.sectorPE;
 
-  $('#pl')
-    .text(pl)
-    .css('color', pl > tmed ? 'green' : 'red');
+    pc = response.data.pc;
+    pcp = Math.round(((pc - tmed) / tmed) * 100 * 100) / 100;
 
-  $('#plp')
-    .text('(' + plp + ')')
-    .css('color', plp > 0 ? 'green' : 'red');
+    pl = response.data.pl;
+    plp = Math.round(((pl - tmed) / tmed) * 100 * 100) / 100;
 
-  $('#tvol')
-    .text(numeral(tvol))
-    .css('color', pl > tmed ? 'black' : 'black');
-  $('#Mtvol')
-    .text(Math.round((tvol / tvolp) * 10) / 10)
-    .css('color', Number(tvol) > Number(tvolp) ? 'green' : 'red');
+    tvol = response.data.tvol;
+    tvolp = response.data.QTotTran5JAvg;
 
-  $('#pe').text(pe);
-  $('#sec-pe').text(sectorPE);
+    $('#title').text(name + '-' + pc);
+    $('#name').text(name);
+    $('#full-name').text('(' + fullName + ')');
+    $('#cs-name').text(csName);
 
-  if (hist) {
-    PlotHist(360);
-  }
+    $('#pc')
+      .text(pc)
+      .css('color', pc > tmed ? 'green' : 'red');
+    $('#pcp')
+      .text('(' + pcp + ')')
+      .css('color', pcp > 0 ? 'green' : 'red');
 
-  intraDayPrice = response.data.intraDayPrice;
-  if (intraDayPrice) {
-    len = response.data.intraDayPrice.length;
-    temp = JSON.parse(JSON.stringify(intraDayPrice));
-    // temp = temp.slice(len - interval, len);
+    $('#pl')
+      .text(pl)
+      .css('color', pl > tmed ? 'green' : 'red');
 
-    var parseTime = d3.timeParse('%H:%M');
-    temp.forEach(function(d) {
-      d.date = parseTime(d.date);
-      //d.pl = d.pl;
-    });
-    Draw(temp, '#one-day', '%H:%M', tmin, tmax);
-  }
+    $('#plp')
+      .text('(' + plp + ')')
+      .css('color', plp > 0 ? 'green' : 'red');
 
-  temp = JSON.parse(JSON.stringify(response.data.ctHist));
-  var parseTime = d3.timeParse('%Y-%m-%d');
-  temp.forEach(function(d, i) {
-    temp[i][0] = parseTime(
-      d[0].toString().slice(0, 4) +
-        '-' +
-        d[0].toString().slice(4, 6) +
-        '-' +
-        d[0].toString().slice(6, 8),
+    $('#tvol')
+      .text(numeral(tvol))
+      .css('color', pl > tmed ? 'black' : 'black');
+    $('#Mtvol')
+      .text(Math.round((tvol / tvolp) * 10) / 10)
+      .css('color', Number(tvol) > Number(tvolp) ? 'green' : 'red');
+
+    //$('#pe').text(pe);
+    //$('#sec-pe').text(sectorPE);
+
+    $('#sell-hoghughi-num').text(NumWithCommas(Sell_CountN));
+    $('#sell-hoghughi-vol').text(NumWithCommas(Sell_N_Volume));
+
+    $('#buy-hoghughi-num').text(NumWithCommas(Buy_CountN));
+    $('#buy-hoghughi-vol').text(NumWithCommas(Buy_N_Volume));
+
+    $('#sell-hoghughi-width').css(
+      'width',
+      (Sell_N_Volume / (Sell_N_Volume + Sell_I_Volume)) * 100 + '%',
     );
+    $('#buy-hoghughi-width').css(
+      'width',
+      (Buy_N_Volume / (Buy_N_Volume + Buy_I_Volume)) * 100 + '%',
+    );
+
+    $('#sell-haghighi-num').text(NumWithCommas(Sell_CountI));
+    $('#sell-haghighi-vol').text(NumWithCommas(Sell_I_Volume));
+
+    $('#buy-haghighi-num').text(NumWithCommas(Buy_CountI));
+    $('#buy-haghighi-vol').text(NumWithCommas(Buy_I_Volume));
+
+    $('#sell-haghighi-width').css(
+      'width',
+      (Sell_I_Volume / (Sell_I_Volume + Sell_N_Volume)) * 100 + '%',
+    );
+    $('#buy-haghighi-width').css(
+      'width',
+      (Buy_I_Volume / (Buy_I_Volume + Buy_N_Volume)) * 100 + '%',
+    );
+
+    if (hist) {
+      interval = 360;
+      PlotHist();
+    }
+
+    intraDayPrice = response.data.intraDayPrice;
+    if (intraDayPrice) {
+      len = response.data.intraDayPrice.length;
+      temp = JSON.parse(JSON.stringify(intraDayPrice));
+      // temp = temp.slice(len - interval, len);
+
+      var parseTime = d3.timeParse('%H:%M');
+      temp.forEach(function(d) {
+        d.date = parseTime(d.date);
+        //d.pl = d.pl;
+      });
+      Draw(temp, '#one-day', '%H:%M', tmin, tmax);
+    }
+
+    temp = JSON.parse(JSON.stringify(response.data.ctHist));
+
+    let dd = temp[temp.length - 1][0].toString();
+    let date1 = new Date(
+      dd.slice(0, 4) + '-' + dd.slice(4, 6) + '-' + dd.slice(6, 8),
+    )
+      .toLocaleDateString('fa-IR')
+      .replace(/\//g, '');
+
+    date1 = fixNumbers(date1.slice(2, 8));
+    let date2 = date.replace(/\//g, '');
+    if (date1 != date2) {
+      (dateSplitted = date.split('/')),
+        (jD = JalaliDate.jalaliToGregorian(
+          '13' + dateSplitted[0],
+          dateSplitted[1],
+          dateSplitted[2],
+        )),
+        (jResult = jD[0] + jD[1] + jD[2]);
+
+      let g = [
+        jResult,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        Buy_I_Volume * pc,
+        0,
+        Sell_I_Volume * pc,
+      ];
+      temp.unshift(g);
+    }
+
+    var parseTime = d3.timeParse('%Y-%m-%d');
+    temp.forEach(function(d, i) {
+      temp[i][0] = parseTime(
+        d[0].toString().slice(0, 4) +
+          '-' +
+          d[0].toString().slice(4, 6) +
+          '-' +
+          d[0].toString().slice(6, 8),
+      );
+    });
+    console.log('temp = ', temp);
+    DrawMoneyFlow(temp, '#money-flow');
   });
-  console.log('temp = ', temp);
-  DrawMoneyFlow(temp, '#money-flow');
 });
 
 axios.get('http://filterbourse.ir/api/names').then(response => {
@@ -464,34 +601,250 @@ function numeral(tvol) {
 
 function PlotReal() {}
 
-function PlotHist(interval) {
+function PlotHist() {
+  let temp;
+
   len = hist.length;
-  let temp = JSON.parse(JSON.stringify(hist));
+  temp = JSON.parse(JSON.stringify(hist));
+
+  if (interval == 'all') {
+    interval = len;
+  }
   temp = temp.slice(len - interval, len);
 
+  let dd = temp[temp.length - 1];
+  let date1 = new Date(
+    dd.date.slice(0, 4) + '-' + dd.date.slice(4, 6) + '-' + dd.date.slice(6, 8),
+  )
+    .toLocaleDateString('fa-IR')
+    .replace(/\//g, '');
+
+  date1 = fixNumbers(date1.slice(2, 8));
+  console.log('date = ', date);
+  let date2 = date.replace(/\//g, '');
+  if (date1 != date2) {
+    (dateSplitted = date.split('/')),
+      (jD = JalaliDate.jalaliToGregorian(
+        '13' + dateSplitted[0],
+        dateSplitted[1],
+        dateSplitted[2],
+      )),
+      (jResult = jD[0] + jD[1] + jD[2]);
+    console.log(jResult);
+
+    let g = {
+      date: jResult,
+      vol: Number(tvol),
+      pl: Number(pl),
+    };
+    console.log('g = ', g);
+    temp.push(g);
+  }
+
+  console.log('date1 = ', date1);
+  console.log('date2 = ', date2);
+
   var parseTime = d3.timeParse('%Y-%m-%d');
-  temp.forEach(function(d) {
+  temp.forEach((d, i) => {
     d.date = parseTime(
       d.date.slice(0, 4) + '-' + d.date.slice(4, 6) + '-' + d.date.slice(6, 8),
     );
-    d.pl = d.pl;
+    if (adjusted == 0) {
+      if (log == 0) d.pl = histNotAdj[i + len - interval];
+      else d.pl = Math.log2(histNotAdj[i + len - interval]);
+    } else {
+      if (log == 0) d.pl = d.pl;
+      else d.pl = Math.log2(d.pl);
+    }
   });
 
+  console.log('temp = ', temp);
   DrawHist(temp, '#hist', '%Y-%m-%d');
 }
 
-$('#1M').click(function() {
-  // if (this.id == '1M')
-  {
-    console.log('PlotHist = ', PlotHist);
-    PlotHist(30);
+$(document).ready(function() {
+  if (watchList.includes(inscode)) {
+    $('#watch-list').toggleClass('fa-eye fa-eye-slash');
   }
-});
 
-$('#watch-list').click(() => {
-  watchList.push(inscode);
-  $(this).toggleClass('fa-eye fa-eye-slash');
+  $('#next-list').click(() => {
+    iterateListIndex++;
+    if (iterateListIndex == iterateList.length) {
+      $('#next-list').css('color', 'grey');
+      iterateListIndex = iterateList.length - 1;
+    } else {
+      localStorage.setItem(
+        'iterateListIndex',
+        JSON.stringify(iterateListIndex),
+      );
+      window.location.href =
+        'http://filterbourse.ir/' + iterateList[iterateListIndex];
+    }
+  });
+
+  $('#prev-list').click(() => {
+    iterateListIndex--;
+    console.log('iterateListIndex = ', iterateListIndex);
+    if (iterateListIndex == -1) {
+      $('#prev-list').css('color', 'grey');
+      iterateListIndex = 0;
+      console.log('iterateListIndex = ', iterateListIndex);
+    } else {
+      localStorage.setItem(
+        'iterateListIndex',
+        JSON.stringify(iterateListIndex),
+      );
+      window.location.href =
+        'http://filterbourse.ir/' + iterateList[iterateListIndex];
+    }
+  });
+
+  $('#watch-list').click(() => {
+    console.log('watchList = ', watchList);
+    if (watchList.includes(inscode)) {
+      var index = watchList.indexOf(inscode);
+      watchList.splice(index, 1);
+      if (!watchList) {
+        watchList = [];
+      }
+    } else {
+      watchList.push(inscode);
+    }
+
+    localStorage.setItem('watchList', JSON.stringify(watchList));
+    console.log('watchList = ', watchList);
+    $('#watch-list').toggleClass('fa-eye fa-eye-slash');
+  });
+
+
+  $('#7d').click(function() {
+    interval = 7;
+    PlotHist();
+  });
+
+  $('#1M').click(function() {
+    interval = 30;
+    PlotHist();
+  });
+
+  $('#2M').click(function() {
+    interval = 60;
+    PlotHist();
+  });
+
+  $('#1Y').click(function() {
+    interval = 360;
+    PlotHist();
+  });
+
+  $('#All').click(function() {
+    interval = 'all';
+    PlotHist();
+  });
+
+  $('#adjusted').click(function() {
+    adjusted = 1 - adjusted;
+    PlotHist();
+  });
+
+  $('#log').click(function() {
+    log = 1 - log;
+    console.log('log = ', log);
+    PlotHist();
+  });
 });
 //
 //
 //
+var persianNumbers = [
+    /۰/g,
+    /۱/g,
+    /۲/g,
+    /۳/g,
+    /۴/g,
+    /۵/g,
+    /۶/g,
+    /۷/g,
+    /۸/g,
+    /۹/g,
+  ],
+  arabicNumbers = [/٠/g, /١/g, /٢/g, /٣/g, /٤/g, /٥/g, /٦/g, /٧/g, /٨/g, /٩/g],
+  fixNumbers = function(str) {
+    if (typeof str === 'string') {
+      for (var i = 0; i < 10; i++) {
+        str = str.replace(persianNumbers[i], i).replace(arabicNumbers[i], i);
+      }
+    }
+    return str;
+  };
+
+JalaliDate = {
+  g_days_in_month: [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31],
+  j_days_in_month: [31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29],
+};
+
+JalaliDate.jalaliToGregorian = function(j_y, j_m, j_d) {
+  j_y = parseInt(j_y);
+  j_m = parseInt(j_m);
+  j_d = parseInt(j_d);
+  var jy = j_y - 979;
+  var jm = j_m - 1;
+  var jd = j_d - 1;
+
+  var j_day_no =
+    365 * jy + parseInt(jy / 33) * 8 + parseInt(((jy % 33) + 3) / 4);
+  for (var i = 0; i < jm; ++i) j_day_no += JalaliDate.j_days_in_month[i];
+
+  j_day_no += jd;
+
+  var g_day_no = j_day_no + 79;
+
+  var gy =
+    1600 +
+    400 *
+      parseInt(
+        g_day_no / 146097,
+      ); /* 146097 = 365*400 + 400/4 - 400/100 + 400/400 */
+  g_day_no = g_day_no % 146097;
+
+  var leap = true;
+  if (g_day_no >= 36525) {
+    /* 36525 = 365*100 + 100/4 */
+    g_day_no--;
+    gy +=
+      100 * parseInt(g_day_no / 36524); /* 36524 = 365*100 + 100/4 - 100/100 */
+    g_day_no = g_day_no % 36524;
+
+    if (g_day_no >= 365) g_day_no++;
+    else leap = false;
+  }
+
+  gy += 4 * parseInt(g_day_no / 1461); /* 1461 = 365*4 + 4/4 */
+  g_day_no %= 1461;
+
+  if (g_day_no >= 366) {
+    leap = false;
+
+    g_day_no--;
+    gy += parseInt(g_day_no / 365);
+    g_day_no = g_day_no % 365;
+  }
+
+  for (
+    var i = 0;
+    g_day_no >= JalaliDate.g_days_in_month[i] + (i == 1 && leap);
+    i++
+  )
+    g_day_no -= JalaliDate.g_days_in_month[i] + (i == 1 && leap);
+  var gm = i + 1;
+  var gd = g_day_no + 1;
+
+  gm = gm < 10 ? '0' + gm : gm;
+  gd = gd < 10 ? '0' + gd : gd;
+
+  return [gy, gm, gd];
+};
+
+function NumWithCommas(x) {
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}

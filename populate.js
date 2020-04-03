@@ -76,7 +76,12 @@ async function main() {
     }
 
     if (pch == 1) {
-      await GetPClosingHist(dbo, id);
+      await GetPClosingHist(dbo, id, 1); //adj
+      pClosingHistCalls.forEach(v => {
+        if (v) v.cancel();
+      });
+
+      await GetPClosingHist(dbo, id, 0); //not adj
       pClosingHistCalls.forEach(v => {
         if (v) v.cancel();
       });
@@ -1810,7 +1815,7 @@ function GetIntraDayPrice(day, inscode) {
   });
 }
 
-function GetPClosingHist(dbo, id) {
+function GetPClosingHist(dbo, id, a) {
   return new Promise(async (res, rej) => {
     setTimeout(() => {
       console.log('pClosingSendCntr = ', pClosingSendCntr);
@@ -1822,11 +1827,13 @@ function GetPClosingHist(dbo, id) {
       let ind = allRows.findIndex((v1, i1) => v1.name == v.name);
       if (ind != -1) {
         //        console.log("v = ", v);
-        if (v.name.match(/^([^0-9]*)$/) && !allRows[ind].hist) {
+        let flag = a == 1 ? !allRows[ind].hist : !allRows[ind].histNotAdj;
+        if (v.name.match(/^([^0-9]*)$/) && flag) {
           url =
             'http://tsetmc.com/tsev2/chart/data/Financial.aspx?i=' +
             v.inscode +
-            '&t=ph&a=1';
+            '&t=ph&a=' +
+            a;
           pClosingHistCalls[pClosingSendCntr] = axios.CancelToken.source();
           axios
             .get(url, {cancelToken: pClosingHistCalls[pClosingSendCntr].token})
@@ -1846,11 +1853,24 @@ function GetPClosingHist(dbo, id) {
                   pl: Number(v[6]),
                 }));
 
-              allRows[ind].hist = hist;
-              //console.log("hist = ", hist);
-              var row = await dbo
-                .collection('allRows')
-                .updateOne({name: v.name}, {$set: {hist: hist}});
+              //hist = [{
+              //  date: "20200103",
+              //  vol: Number(10),
+              //  pl: Number(10),
+              //}]
+
+              if (a == 1) {
+                allRows[ind].hist = hist;
+                var row = await dbo
+                  .collection('allRows')
+                  .updateOne({name: v.name}, {$set: {hist: hist}});
+              } else {
+                hist = hist.map(v => v.pl);
+                allRows[ind].histNotAdj = hist;
+                var row = await dbo
+                  .collection('allRows')
+                  .updateOne({name: v.name}, {$set: {histNotAdj: hist}});
+              }
               pClosingRecvCntr++;
               console.log('pclosingOk = ', pClosingRecvCntr);
             })
@@ -1860,7 +1880,9 @@ function GetPClosingHist(dbo, id) {
               else console.log('pclosingError = ', error);
 
               if (error.code == 'Z_BUF_ERROR') {
-                allRows[ind].hist = [];
+                a == 1
+                  ? (allRows[ind].hist = [])
+                  : (allRows[ind].histNotAdj = []);
               }
               if (pClosingRecvCntr == pClosingSendCntr) {
                 console.log('pClosingSendCntr = ', pClosingSendCntr);

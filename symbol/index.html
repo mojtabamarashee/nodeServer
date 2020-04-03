@@ -36,9 +36,9 @@
 
   <script>
     $(function() {
-      $(".controlgroup").controlgroup();
-      $(".controlgroup-vertical").controlgroup({
-        direction: "vertical"
+      $('.controlgroup').controlgroup();
+      $('.controlgroup-vertical').controlgroup({
+        direction: 'vertical',
       });
     });
   </script>
@@ -50,18 +50,30 @@
     <script src="https://use.fontawesome.com/6edc47e3c9.js"></script>
   </head>
   <body>
-    <div id="root"></div> 
-    <i class="fa fa-eye fa-3x " id='watch-list'></i>
-    <div dir="rtl">
-      <div style="margin:20px 20px 0 0" class="ui-widget">
-        <label style="font-size:30px;height:50px; width:300px" for="tags"
-          >نماد:
-        </label>
-        <input style="font-size:30px;height:50px; width:300px" id="tags" />
+    <div id="root"></div>
+    <i class="fa fa-eye fa-4x " id="watch-list"></i>
+    <div style="margin-left:10%; display:inline-block">
+      <i
+        style="color:orchid"
+        class="fa fa-step-backward fa-4x "
+        id="prev-list"
+      ></i>
+      <div dir="rtl" style="display: inline-block">
+        <div style="border-style: inset; border-width:thick" class="ui-widget">
+          <input placeholder="نماد" style="font-size:30px; width:200px" id="tags" />
+        </div>
       </div>
-      <br />
-      <br />
-
+      <i
+        style="margin-left:0px; color:cornflowerblue"
+        class="fa fa-step-forward fa-4x "
+        id="next-list"
+      ></i>
+    </div>
+    <br/>
+    <br/>
+    <br/>
+    <br/>
+    <div dir="rtl">
       <div id="name-div" style="width:100%">
         <span style="font-size:30px;font-weight:bold" id="name"> </span>
         <span style="margin:0 3px 0 0; font-size:25px;" id="full-name"> </span>
@@ -93,14 +105,16 @@
       <br />
       <br />
       <br />
-      <div dir="ltr" class="widget">
+      <div dir="ltr" class="widget" style="margin-left:80px">
         <div class="controlgroup">
           <label for="7d" style="font-size:28px" onclick="ChangeDate(7)"
             >7d</label
           >
           <input type="radio" name="day" id="7d" />
 
-          <label for="1M" style="font-size:28px" onclick="console.log('s')">1M</label>
+          <label for="1M" style="font-size:28px" onclick="console.log('s')"
+            >1M</label
+          >
           <input type="radio" name="day" id="1M" onclick="PlotHist(30)" />
 
           <label for="2M" style="font-size:28px">2M</label>
@@ -112,14 +126,12 @@
           <label for="All" style="font-size:28px">All</label>
           <input type="radio" name="day" id="All" />
 
-          <input
-            id="horizontal-spinner"
-            style="font-size:28px;width:30px"
-            class="ui-spinner-input"
-          />
+          <label for="adjusted" style="font-size:28px">adj</label>
+          <input type="checkbox" checked name="insurance" id="adjusted" />
 
-          <label for="insurance" style="font-size:28px">adj</label>
-          <input type="checkbox" checked name="insurance" id="insurance" />
+          <label for="log" style="font-size:28px">log</label>
+          <input type="checkbox" name="log" id="log" />
+
         </div>
       </div>
 
@@ -130,8 +142,7 @@
       <br />
 
       <div dir="ltr" style="width:100%" id="pe-div">
-        <span id="pe"> </span>
-        <span id="sector-pe"> </span>
+        <span id="pe"> </span> <span id="sector-pe"> </span>
       </div>
       <div dir="ltr" style="width:100%" id="one-day"></div>
       <br />
@@ -141,12 +152,94 @@
 
       <br />
       <br />
+      <br />
+      <br />
+
       <div dir="ltr" style="width:100%" id="real">
-        <span id="real-num" />
-        <div style="height: 10px;borderStyle: groove;">
-          <div
-            style="background-color: blue;width: 50%;padding: 0;margin: 0;height: 100%;"
-          />
+        <div style="display:inline-block; width:40%">
+          <span
+            style="font-size:28px;font-weight:bold; float:right"
+            id="sell-haghighi-num"
+            >123</span
+          >
+          <p style="clear: right; margin: 0;"></p>
+          <div style="height: 20px;border-style: groove; width:100%">
+            <div
+              id="sell-haghighi-width"
+              style="background-color:red;width: 50%;padding: 0;margin: 0;height: 100%;float:right"
+            ></div>
+
+            <p style="clear: right; margin: 0;"></p>
+            <span
+              style="font-size:28px;font-weight:bold; float:right"
+              id="sell-haghighi-vol"
+              >123</span
+            >
+            <p style="clear: left; margin: 0;"></p>
+          </div>
+        </div>
+
+        <div style="display:inline-block; width:40%; float:right">
+          <span style="font-size:28px;font-weight:bold" id="buy-haghighi-num"
+            >245</span
+          >
+          <p style="clear: left; margin: 0;"></p>
+          <div style="height: 20px;border-style: groove; width:100%">
+            <div
+              id="buy-haghighi-width"
+              style="background-color: green;width: 50%;padding: 0;margin: 0;height: 100%;"
+            ></div>
+            <p style="clear: left; margin: 0;"></p>
+            <span style="font-size:28px;font-weight:bold" id="buy-haghighi-vol"
+              >245</span
+            >
+            <p style="clear: left; margin: 0;"></p>
+          </div>
+        </div>
+      </div>
+
+      <br />
+
+      <div dir="ltr" style="width:100%" id="real">
+        <div style="display:inline-block; width:40%">
+          <span
+            style="font-size:28px;font-weight:bold; float:right"
+            id="sell-hoghughi-num"
+            >123</span
+          >
+          <p style="clear: right; margin: 0;"></p>
+          <div style="height: 20px;border-style: groove; width:100%">
+            <div
+              id="sell-hoghughi-width"
+              style="background-color:red;width: 50%;padding: 0;margin: 0;height: 100%;float:right"
+            ></div>
+
+            <p style="clear: right; margin: 0;"></p>
+            <span
+              style="font-size:28px;font-weight:bold; float:right"
+              id="sell-hoghughi-vol"
+              >123</span
+            >
+            <p style="clear: left; margin: 0;"></p>
+          </div>
+        </div>
+
+        <div style="display:inline-block; width:40%; float:right">
+          <span style="font-size:28px;font-weight:bold" id="buy-hoghughi-num"
+            >245</span
+          >
+          <p style="clear: left; margin: 0;"></p>
+          <div style="height: 20px;border-style: groove; width:100%">
+            <div
+              id="buy-hoghughi-width"
+              style="background-color: green;width: 50%;padding: 0;margin: 0;height: 100%;"
+            ></div>
+            <p style="clear: left; margin: 0;"></p>
+            <span style="font-size:28px;font-weight:bold" id="buy-hoghughi-vol"
+              >245</span
+            >
+            <p style="clear: left; margin: 0;"></p>
+          </div>
         </div>
       </div>
     </div>
