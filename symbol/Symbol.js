@@ -11,6 +11,9 @@ function GetWatchList() {
     iterateListIndex = JSON.parse(localStorage.getItem('iterateListIndex'));
   }
   console.log('iterateList = ', iterateList);
+
+  notes = JSON.parse(localStorage.getItem('notes'));
+  console.log('notes = ', notes);
 }
 
 GetWatchList();
@@ -574,6 +577,21 @@ $(document).ready(function() {
     console.log('temp = ', temp);
     DrawMoneyFlow(temp, '#money-flow');
   });
+
+  if (notes) {
+    let t = notes.find(v => v.inscode == inscode);
+    console.log('t = ', t);
+    if (t && t.text) {
+      let text = t.text;
+      $('#text-area').val(text);
+      console.log('text2 = ', text);
+    } else {
+      $('#text-area').val('');
+    }
+  } else {
+    $('#text-area').val('');
+    console.log('area = ');
+  }
 });
 
 axios.get('http://filterbourse.ir/api/names').then(response => {
@@ -716,7 +734,6 @@ $(document).ready(function() {
     $('#watch-list').toggleClass('fa-eye fa-eye-slash');
   });
 
-
   $('#7d').click(function() {
     interval = 7;
     PlotHist();
@@ -847,4 +864,25 @@ JalaliDate.jalaliToGregorian = function(j_y, j_m, j_d) {
 
 function NumWithCommas(x) {
   return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function TextAreaChanged() {
+  let t = $('#text-area').val();
+  console.log('t = ', t);
+  let i;
+  let c = {inscode: inscode, text: t};
+  if (notes) {
+    i = notes.findIndex(v => v.inscode == inscode);
+    if (i != -1) {
+      notes[i] = c;
+      console.log('i1 = ', i);
+    } else {
+      console.log('i2 = ', i);
+      notes.push(c);
+    }
+  } else {
+    notes = [];
+    notes[0] = c;
+  }
+  localStorage.setItem('notes', JSON.stringify(notes));
 }

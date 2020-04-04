@@ -21,3 +21,7 @@ body {
 #tags:focus {
     box-shadow: 0 0 30px #96f226
 }
+
+textarea::placeholder {
+  font-size: 30px;
+}
