@@ -28,8 +28,10 @@ function DrawHist(dataa, id, timeFormat) {
     svg = d3
       .select(id)
       .append('svg')
-      .attr('width', width + margin.left + margin.right)
-      .attr('height', height + margin.top + margin.bottom)
+      //.attr('width', width + margin.left + margin.right)
+      //.attr('height', height + margin.top + margin.bottom)
+      .attr('preserveAspectRatio', 'xMinYMin meet')
+      .attr('viewBox', '0 0 960 500')
       .append('g')
       .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
     drawHistFirstFlag = 1;
@@ -211,8 +213,10 @@ function Draw(dataa, id, timeFormat, tmin, tmax) {
   var svg = d3
     .select(id)
     .append('svg')
-    .attr('width', width + margin.left + margin.right)
-    .attr('height', height + margin.top + margin.bottom)
+    //.attr('width', width + margin.left + margin.right)
+    //.attr('height', height + margin.top + margin.bottom)
+    .attr('preserveAspectRatio', 'xMinYMin meet')
+    .attr('viewBox', '0 0 960 500')
     .append('g')
     .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
@@ -297,8 +301,10 @@ function DrawMoneyFlow(dataa, id) {
   var svg = d3
     .select(id)
     .append('svg')
-    .attr('width', width + margin.left + margin.right)
-    .attr('height', height + margin.top + margin.bottom)
+    //.attr('width', width + margin.left + margin.right)
+    //.attr('height', height + margin.top + margin.bottom)
+    .attr('preserveAspectRatio', 'xMinYMin meet')
+    .attr('viewBox', '0 0 960 500')
     .append('g')
     .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
