@@ -18,6 +18,7 @@ function GetWatchList() {
 
 GetWatchList();
 let drawHistFirstFlag = 0;
+let drawBuyerPowerFirstFlag = 0;
 
 function DrawHist(dataa, id, timeFormat) {
   var margin = {top: 20, right: 50, bottom: 90, left: 80},
@@ -534,6 +535,7 @@ $(document).ready(function() {
     }
 
     temp = JSON.parse(JSON.stringify(response.data.ctHist));
+    ctHist = temp;
 
     let dd = temp[temp.length - 1][0].toString();
     let date1 = new Date(
@@ -891,4 +893,183 @@ function TextAreaChanged() {
     notes[0] = c;
   }
   localStorage.setItem('notes', JSON.stringify(notes));
+}
+
+function DrawBuyerPower(dataa, id, timeFormat) {
+  var margin = {top: 20, right: 50, bottom: 90, left: 80},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+  if (!drawBuyerPowerFirstFlag) {
+    svg = d3
+      .select(id)
+      .append('svg')
+      //.attr('width', width + margin.left + margin.right)
+      //.attr('height', height + margin.top + margin.bottom)
+      .attr('preserveAspectRatio', 'xMinYMin meet')
+      .attr('viewBox', '0 0 960 500')
+      .append('g')
+      .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+    drawBuyerPowerFirstFlag = 1;
+
+    // Add the valueline path.
+    svg
+      .append('path')
+      .attr('class', 'line')
+      .style('stroke-width', 5);
+
+    // Add the X Axis
+    svg
+      .append('g')
+      .attr('transform', 'translate(0,' + height + ')')
+      .attr('class', 'x axis')
+      .style('font', '25px times');
+
+    // Add the Y Axis
+    svg
+      .append('g')
+      .attr('class', 'y axis')
+      .style('font', '25px times');
+
+    svg.append('rect').attr('class', 'rect');
+  }
+
+  var x = d3.scaleTime().range([0, width]);
+  var y = d3.scaleLinear().range([height, 0]);
+
+  var valueline = d3
+    .line()
+    .x(function(d) {
+      return x(d.date);
+    })
+    .y(function(d) {
+      return y(d.pl);
+    });
+
+  let data = [];
+  for (i = 0; i < dataa.length; i++) {
+    data[i] = dataa[i];
+  }
+  x.domain(
+    d3.extent(data, function(d) {
+      return d.date;
+    }),
+  );
+  let minn = d3.min(data, function(d) {
+    return d.pl;
+  });
+  let maxx = d3.max(data, function(d) {
+    return d.pl;
+  });
+
+  y.domain([minn - (maxx - minn) * 0.1, maxx]);
+
+  // Add the valueline path.
+  svg
+    .select('.line')
+    .data([data])
+    .attr('d', valueline);
+
+  // Add the X Axis
+  svg
+    .select('.x.axis')
+    .call(
+      d3
+        .axisBottom(x)
+        .ticks(10)
+        .tickFormat(d =>
+          new Date(d)
+            .toLocaleTimeString('fa-IR', {
+              year: '2-digit',
+              month: '2-digit',
+              day: '2-digit',
+            })
+            .replace('،‏ ۰:۰۰:۰۰', ''),
+        ),
+    )
+    .selectAll('text')
+    .attr('y', 0)
+    .attr('x', 9)
+    .attr('dy', '.35em')
+    .attr('transform', 'rotate(65)')
+    .style('text-anchor', 'start');
+
+  // Add the Y Axis
+
+  const yMin = d3.min(data, d => {
+    return Math.min(d['pl']);
+  });
+  const yMax = d3.max(data, d => {
+    return Math.max(d['pl']);
+  });
+  console.log('yMax = ', yMax);
+
+  svg
+    .select('.y.axis')
+    //.style('font', '25px times')
+    .call(
+      d3
+        .axisLeft(y)
+        .ticks(5)
+        .tickFormat(d => {
+          if (yMax >= 100000) {
+            return Math.round((d / 1000) * 10) / 10 + 'k';
+          } else {
+            return d;
+          }
+        }),
+    );
+}
+
+PlotBuyerPower();
+{
+  temp = JSON.parse(JSON.stringify(ctHist));
+  ctHist = temp;
+
+  let dd = temp[temp.length - 1][0].toString();
+  let date1 = new Date(
+    dd.slice(0, 4) + '-' + dd.slice(4, 6) + '-' + dd.slice(6, 8),
+  )
+    .toLocaleDateString('fa-IR')
+    .replace(/\//g, '');
+
+  date1 = fixNumbers(date1.slice(2, 8));
+  let date2 = date.replace(/\//g, '');
+  if (date1 != date2) {
+    (dateSplitted = date.split('/')),
+      (jD = JalaliDate.jalaliToGregorian(
+        '13' + dateSplitted[0],
+        dateSplitted[1],
+        dateSplitted[2],
+      )),
+      (jResult = jD[0] + jD[1] + jD[2]);
+
+    let g = [
+      jResult,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      Buy_I_Volume * pc,
+      0,
+      Sell_I_Volume * pc,
+    ];
+    temp.unshift(g);
+  }
+
+  var parseTime = d3.timeParse('%Y-%m-%d');
+  temp.forEach(function(d, i) {
+    temp[i][0] = parseTime(
+      d[0].toString().slice(0, 4) +
+        '-' +
+        d[0].toString().slice(4, 6) +
+        '-' +
+        d[0].toString().slice(6, 8),
+    );
+  });
+  console.log('temp = ', temp);
 }

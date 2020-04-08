@@ -70,7 +70,7 @@ async function main() {
       console.log('bodyDone');
     }
 
-    if (mi == 1) {
+    if (mi == 1 && marketInitDone == 0) {
       await GetMarketInit(dbo, id);
       await GetClientTypeAll(dbo, id);
     }
@@ -1249,6 +1249,33 @@ function GetMarketInit(dbo, id) {
 
             //index = symbols.findIndex(v1 => (v1.name = name));
 
+            await dbo.collection('mi').updateOne(
+              {name: name},
+              {
+                $set: {
+                  fullName,
+                  pl: pl,
+                  tmin: tmin,
+                  tmax: tmax,
+                  tmed: tmed,
+                  tvol: tvol,
+                  pmax,
+                  pmin,
+                  pc: pc,
+                  l18: l18,
+                  inscode: inscode,
+                  id: id,
+                  pe: pe,
+                  esp: eps,
+                  pcp,
+                  plp,
+                  cs,
+                  flow,
+                  date: miDate,
+                },
+              },
+            );
+
             await dbo.collection('allRows').updateOne(
               {name: name},
               {
@@ -1275,6 +1302,7 @@ function GetMarketInit(dbo, id) {
                 },
               },
             );
+
             marketInitRecvCntr++;
             console.log('marketInitRecvCntr = ', marketInitRecvCntr);
             if (marketInitRecvCntr == marketInitSendCntr) {
@@ -1294,6 +1322,18 @@ function GetMarketInit(dbo, id) {
               qd1 = t[6]; //hajm kharid
               pd1 = t[7]; //hajm forush
 
+              await dbo.collection('mi').updateOne(
+                {inscode: inscode},
+                {
+                  $set: {
+                    qo1: qo1, //gh kharid
+                    po1: po1, //gh forush
+                    qd1: qd1, //hajm kharid
+                    pd1: pd1, //hajm forush
+                  },
+                },
+              );
+
               await dbo.collection('allRows').updateOne(
                 {inscode: inscode},
                 {
@@ -1305,6 +1345,7 @@ function GetMarketInit(dbo, id) {
                   },
                 },
               );
+
               marketInitRecvCntr++;
               console.log('marketInitRecvCntr = ', marketInitRecvCntr);
               if (marketInitRecvCntr == marketInitSendCntr) {
@@ -1317,6 +1358,18 @@ function GetMarketInit(dbo, id) {
 
               qd2 = t[7]; //hajm kharid
               pd2 = t[8]; //hajm forush
+
+              await dbo.collection('mi').updateOne(
+                {inscode: inscode},
+                {
+                  $set: {
+                    qo2: qo2, //gh kharid
+                    po2: po2, //gh forush
+                    qd2: qd2, //hajm kharid
+                    pd2: pd2, //hajm forush
+                  },
+                },
+              );
 
               await dbo.collection('allRows').updateOne(
                 {inscode: inscode},
@@ -1347,6 +1400,18 @@ function GetMarketInit(dbo, id) {
               qd3 = qd3; //hajm kharid
               pd3 = pd3; //hajm forush
 
+              await dbo.collection('mi').updateOne(
+                {inscode: inscode},
+                {
+                  $set: {
+                    qo3: qo3, //gh kharid
+                    po3: po3, //gh forush
+                    qd3: qd3, //hajm kharid
+                    pd3: pd3, //hajm forush
+                  },
+                },
+              );
+
               await dbo.collection('allRows').updateOne(
                 {inscode: inscode},
                 {
@@ -1358,6 +1423,7 @@ function GetMarketInit(dbo, id) {
                   },
                 },
               );
+
               marketInitRecvCntr++;
               console.log('marketInitRecvCntr = ', marketInitRecvCntr);
               if (marketInitRecvCntr == marketInitSendCntr) {
@@ -1448,6 +1514,24 @@ function GetClientTypeAll(dbo, id) {
           Sell_I_Volume = t[cntr++];
           Sell_N_Volume = t[cntr++];
 
+          await dbo.collection('mi').updateOne(
+            {inscode: inscode},
+            {
+              $set: {
+                Buy_CountI,
+                Buy_CountN,
+                Buy_I_Volume,
+                Buy_N_Volume,
+
+                Sell_CountI,
+                Sell_CountN,
+                Sell_I_Volume,
+                Sell_N_Volume,
+              },
+            },
+          );
+
+
           await dbo.collection('allRows').updateOne(
             {inscode: inscode},
             {
@@ -1465,6 +1549,7 @@ function GetClientTypeAll(dbo, id) {
             },
           );
         });
+
         //console.log('ClientTypeAllDone1 = ', clientTypeAllDone);
         res(1);
       })
@@ -1597,6 +1682,22 @@ async function GetBodyValues(body, v, dbo) {
         color = 'black';
       }
 
+      await dbo.collection('mi').updateOne(
+        {name: v.name},
+        {
+          $set: {
+            floatVal: floatVal,
+            totalVol: totalVol,
+            sectorPE: sectorPE,
+            csName: csName,
+            QTotTran5JAvg: QTotTran5JAvg,
+            color: color,
+            body: 1,
+          },
+        },
+      );
+
+
       await dbo.collection('allRows').updateOne(
         {name: v.name},
         {
@@ -1611,7 +1712,6 @@ async function GetBodyValues(body, v, dbo) {
           },
         },
       );
-      console.log('res = ', res);
       res(1);
     } catch (e) {
       console.log('catch bodyError = ', e);
@@ -1941,12 +2041,14 @@ async function InitDbAndAllRows(dbo) {
     if (cl == 1) {
       try {
         dbo.collection('allRows').remove({});
+        dbo.collection('mi').remove({});
       } catch (e) {
         console.log('e = ', e);
       }
     }
 
     await dbo.createCollection('allRows');
+    await dbo.createCollection('mi');
 
     instAll.forEach(async (v, i) => {
       allRows.push({inscode: v.inscode, name: v.name});
@@ -1956,6 +2058,17 @@ async function InitDbAndAllRows(dbo) {
         .toArray();
       if (!row.length) {
         await dbo.collection('allRows').insertOne(v);
+      }
+    });
+
+    instAll.forEach(async (v, i) => {
+      allRows.push({inscode: v.inscode, name: v.name});
+      row = await dbo
+        .collection('mi')
+        .find({name: v.name})
+        .toArray();
+      if (!row.length) {
+        await dbo.collection('mi').insertOne(v);
       }
     });
 
