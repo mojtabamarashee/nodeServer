@@ -69,10 +69,14 @@ async function main() {
     app.get('/api/names', async (req, res) => {
       console.log('req = ', req);
       var row = await dbo
-        .collection('allRows')
+        .collection('mi')
         .find()
         .toArray();
-      let names = row.map(v => v.name);
+      let names = row.map(v => {
+        if (v.name) {
+          return v.name;
+        }
+      });
       res.send(names);
     });
 

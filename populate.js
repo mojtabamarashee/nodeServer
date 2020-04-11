@@ -17,6 +17,7 @@ marketInitDone = 0;
 pClosingError = 1;
 pClosingDone = 0;
 allRowsBuffer = [];
+clientTypeAllDone = 0;
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -70,7 +71,7 @@ async function main() {
       console.log('bodyDone');
     }
 
-    if (mi == 1 && marketInitDone == 0) {
+    if (mi == 1 && clientTypeAllDone == 0) {
       await GetMarketInit(dbo, id);
       await GetClientTypeAll(dbo, id);
     }
@@ -1160,6 +1161,8 @@ histError = 0;
 intraDaySendCntr = 0;
 intraDayRecvCntr = 0;
 marketInitRecvCntr = 0;
+clientTypeAllSendCntr = 0;
+clientTypeAllRecvCntr = 0;
 
 let globalCntr = 0;
 
@@ -1213,24 +1216,24 @@ function GetMarketInit(dbo, id) {
             console.log('miDate = ', miDate);
           }
           if (t[1].match(/^IR/)) {
-            inscode = t[0];
-            l18 = t[2];
-            l30 = t[3];
-            pc = t[6];
-            pl = t[7];
-            tvol = t[9];
-            pmin = t[11];
-            pmax = t[12];
-            tmed = t[13];
-            eps = t[14];
-            flow = t[17];
-            cs = t[18];
-            tmax = t[19];
-            tmin = t[20];
-            pe = Math.round((Number(pc) / Number(eps)) * 100) / 100;
-            pcp = ((pc - tmed) / tmed) * 100;
-            plp = ((pl - tmed) / tmed) * 100;
-            name = l18
+            let inscode = t[0];
+            let l18 = t[2];
+            let l30 = t[3];
+            let pc = t[6];
+            let pl = t[7];
+            let tvol = t[9];
+            let pmin = t[11];
+            let pmax = t[12];
+            let tmed = t[13];
+            let eps = t[14];
+            let flow = t[17];
+            let cs = t[18];
+            let tmax = t[19];
+            let tmin = t[20];
+            let pe = Math.round((Number(pc) / Number(eps)) * 100) / 100;
+            let pcp = ((pc - tmed) / tmed) * 100;
+            let plp = ((pl - tmed) / tmed) * 100;
+            let name = l18
               .toString()
               .replace('ي', 'ی')
               .replace('ي', 'ی')
@@ -1238,7 +1241,7 @@ function GetMarketInit(dbo, id) {
               .replace('ك', 'ک')
               .replace('ك', 'ک')
               .replace('ك', 'ک');
-            fullName = l30
+            let fullName = l30
               .toString()
               .replace('ي', 'ی')
               .replace('ي', 'ی')
@@ -1304,13 +1307,12 @@ function GetMarketInit(dbo, id) {
             );
 
             marketInitRecvCntr++;
-            console.log('marketInitRecvCntr = ', marketInitRecvCntr);
+            //   console.log('marketInitRecvCntr = ', marketInitRecvCntr);
             if (marketInitRecvCntr == marketInitSendCntr) {
+              marketInitDone = 1;
               console.log('marketInitDone');
               res(1);
             }
-
-            marketInitDone = 1;
           } else {
             inscode = t[0];
             //index = symbols.findIndex(v1 => (v1.inscode = inscode));
@@ -1350,6 +1352,7 @@ function GetMarketInit(dbo, id) {
               console.log('marketInitRecvCntr = ', marketInitRecvCntr);
               if (marketInitRecvCntr == marketInitSendCntr) {
                 console.log('marketInitDone');
+                marketInitDone = 1;
                 res(1);
               }
             } else if (t[1] == 2) {
@@ -1386,6 +1389,7 @@ function GetMarketInit(dbo, id) {
               console.log('marketInitRecvCntr = ', marketInitRecvCntr);
               if (marketInitRecvCntr == marketInitSendCntr) {
                 console.log('marketInitDone');
+                marketInitDone = 1;
                 res(1);
               }
             } else if (t[1] == 3) {
@@ -1428,6 +1432,7 @@ function GetMarketInit(dbo, id) {
               console.log('marketInitRecvCntr = ', marketInitRecvCntr);
               if (marketInitRecvCntr == marketInitSendCntr) {
                 console.log('marketInitDone');
+                marketInitDone = 1;
                 res(1);
               }
             }
@@ -1445,6 +1450,7 @@ function GetMarketInit(dbo, id) {
         console.log('marketInitRecvCntr = ', marketInitRecvCntr);
         if (marketInitRecvCntr == marketInitSendCntr) {
           console.log('marketInitDone');
+          marketInitDone = 1;
           res(1);
         }
         marketInitDone = 0;
@@ -1500,20 +1506,26 @@ function GetClientTypeAll(dbo, id) {
       })
       .then(async response => {
         response.data.split(';').map(async (v, i) => {
-          clientTypeAllDone = 1;
+          clientTypeAllSendCntr++;
+          //console.log('clientTypeAllSendCntr = ', clientTypeAllSendCntr);
+          //clientTypeAllDone = 1;
+          clientTypeAllDone = 0;
           t = v.split(',');
           let inscode = t[0];
           let cntr = 1;
-          Buy_CountI = t[cntr++];
-          Buy_CountN = t[cntr++];
-          Buy_I_Volume = t[cntr++];
-          Buy_N_Volume = t[cntr++];
+          let Buy_CountI = t[cntr++];
+          let Buy_CountN = t[cntr++];
+          let Buy_I_Volume = t[cntr++];
+          let Buy_N_Volume = t[cntr++];
 
-          Sell_CountI = t[cntr++];
-          Sell_CountN = t[cntr++];
-          Sell_I_Volume = t[cntr++];
-          Sell_N_Volume = t[cntr++];
+          let Sell_CountI = t[cntr++];
+          let Sell_CountN = t[cntr++];
+          let Sell_I_Volume = t[cntr++];
+          let Sell_N_Volume = t[cntr++];
 
+          if (inscode == '24079409192818584') {
+            console.log('Sell_I_Volume = ', Sell_I_Volume);
+          }
           await dbo.collection('mi').updateOne(
             {inscode: inscode},
             {
@@ -1531,7 +1543,10 @@ function GetClientTypeAll(dbo, id) {
             },
           );
 
-
+          if (inscode == '24079409192818584') {
+            console.log('Sell_I_Volume = ', Sell_I_Volume);
+          }
+          //console.log("inscode = ", inscode);
           await dbo.collection('allRows').updateOne(
             {inscode: inscode},
             {
@@ -1548,17 +1563,26 @@ function GetClientTypeAll(dbo, id) {
               },
             },
           );
-        });
 
-        //console.log('ClientTypeAllDone1 = ', clientTypeAllDone);
-        res(1);
+          clientTypeAllRecvCntr++;
+          console.log('clientTypeAllRecvCntr = ', clientTypeAllRecvCntr);
+          if (clientTypeAllSendCntr == clientTypeAllRecvCntr) {
+            res(1);
+            clientTypeAllDone = 1;
+          }
+        });
       })
       .catch(error => {
         console.log('error = ', error.code);
-        clientTypeAllDone = 0;
+        clientTypeAllRecvCntr++;
+        if (clientTypeAllSendCntr == clientTypeAllRecvCntr) {
+          res(1);
+          clientTypeAllDone = 1;
+        }
+        //clientTypeAllDone = 0;
         console.log('ClientTypeAllDone = ', clientTypeAllDone);
         errorCntr++;
-        res(1);
+        //res(1);
       });
   });
 }
@@ -1652,23 +1676,23 @@ async function GetBodyValues(body, v, dbo) {
       var regex = /,ZTitad=(.*?),CI/g;
       cntr = 0;
       match = regex.exec(body);
-      totalVol = match[1];
+      let totalVol = match[1];
 
       var regex = /,InsCode='(.*?)',B/g;
       match = regex.exec(body);
-      insCode = match[1];
+      let insCode = match[1];
 
       var regex = /,SectorPE='(.*?)',KAjC/g;
       match = regex.exec(body);
-      sectorPE = match[1];
+      let sectorPE = match[1];
 
       var regex = /LSecVal='(.*?)',Cg/g;
       match = regex.exec(body);
-      csName = match[1];
+      let csName = match[1];
 
       var regex = /QTotTran5JAvg='(.*?)',SectorPE/g;
       match = regex.exec(body);
-      QTotTran5JAvg = match[1];
+      let QTotTran5JAvg = match[1];
 
       var regex = /,Title='.*',Fa/g;
       match = regex.exec(body);
@@ -1696,7 +1720,6 @@ async function GetBodyValues(body, v, dbo) {
           },
         },
       );
-
 
       await dbo.collection('allRows').updateOne(
         {name: v.name},

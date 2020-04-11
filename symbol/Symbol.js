@@ -10,10 +10,8 @@ function GetWatchList() {
   if (iterateList) {
     iterateListIndex = JSON.parse(localStorage.getItem('iterateListIndex'));
   }
-  console.log('iterateList = ', iterateList);
 
   notes = JSON.parse(localStorage.getItem('notes'));
-  console.log('notes = ', notes);
 }
 
 GetWatchList();
@@ -127,7 +125,6 @@ function DrawHist(dataa, id, timeFormat) {
   const yMax = d3.max(data, d => {
     return Math.max(d['pl']);
   });
-  console.log('yMax = ', yMax);
 
   svg
     .select('.y.axis')
@@ -414,8 +411,10 @@ let adjusted = 1;
 let log = 0;
 let interval = 360;
 
+let resp;
 $(document).ready(function() {
   axios.get('http://filterbourse.ir/hist/' + inscode).then(response => {
+    resp = JSON.parse(JSON.stringify(response));
     name = response.data.name;
     fullName = response.data.fullName;
     csName = response.data.csName;
@@ -441,10 +440,15 @@ $(document).ready(function() {
 
     tmed = Number(response.data.tmed);
     tmin = Number(response.data.tmin);
+      console.log("tmin = ", tmin);
     tmax = Number(response.data.tmax);
+      console.log("tmax = ", tmax);
 
     pe = response.data.pe;
     sectorPE = response.data.sectorPE;
+
+    floatVal = response.data.floatVal;
+    totalVol = response.data.totalVol;
 
     pc = response.data.pc;
     pcp = Math.round(((pc - tmed) / tmed) * 100 * 100) / 100;
@@ -482,11 +486,26 @@ $(document).ready(function() {
       .text(Math.round((tvol / tvolp) * 10) / 10)
       .css('color', Number(tvol) > Number(tvolp) ? 'green' : 'red');
 
+    $('#pe')
+      .text(pe)
+      .css('color', pe < 0 ? 'orange' : pe < sectorPE ? 'green' : 'red');
+
+    $('#sector-pe').text(sectorPE);
+
+    $('#float-val').text(floatVal + '%');
+    $('#total-vol').text(numeral(totalVol));
+    $('#QTotTran5JAvg').text(numeral(tvolp));
+
     //$('#pe').text(pe);
     //$('#sec-pe').text(sectorPE);
 
     $('#sell-hoghughi-num').text(NumWithCommas(Sell_CountN));
     $('#sell-hoghughi-vol').text(NumWithCommas(Sell_N_Volume));
+
+    bs =
+      Math.round(
+        (Sell_CountI / Sell_I_Volume / (Buy_CountI / Buy_I_Volume)) * 10,
+      ) / 10;
 
     $('#buy-hoghughi-num').text(NumWithCommas(Buy_CountN));
     $('#buy-hoghughi-vol').text(NumWithCommas(Buy_N_Volume));
@@ -501,10 +520,21 @@ $(document).ready(function() {
     );
 
     $('#sell-haghighi-num').text(NumWithCommas(Sell_CountI));
-    $('#sell-haghighi-vol').text(NumWithCommas(Sell_I_Volume));
 
-    $('#buy-haghighi-num').text(NumWithCommas(Buy_CountI));
-    $('#buy-haghighi-vol').text(NumWithCommas(Buy_I_Volume));
+    $('#sell-haghighi-vol').text(
+      '(' +
+        Math.round(((Sell_I_Volume * pc) / Sell_CountI / 1e6) * 10) / 10 +
+        'M) ' +
+        NumWithCommas(Sell_I_Volume),
+    );
+
+    $('#buy-haghighi-num').text(NumWithCommas(Buy_CountI) + ' (' + bs + ')');
+    $('#buy-haghighi-vol').text(
+      NumWithCommas(Buy_I_Volume) +
+        ' (' +
+        Math.round(((Buy_I_Volume * pc) / Buy_CountI / 1e6) * 10) / 10 +
+        'M)',
+    );
 
     $('#sell-haghighi-width').css(
       'width',
@@ -519,6 +549,7 @@ $(document).ready(function() {
       interval = 360;
       PlotHist();
     }
+    //PlotBuyerPower();
 
     intraDayPrice = response.data.intraDayPrice;
     if (intraDayPrice) {
@@ -582,23 +613,19 @@ $(document).ready(function() {
           d[0].toString().slice(6, 8),
       );
     });
-    console.log('temp = ', temp);
     DrawMoneyFlow(temp, '#money-flow');
   });
 
   if (notes) {
     let t = notes.find(v => v.inscode == inscode);
-    console.log('t = ', t);
     if (t && t.text) {
       let text = t.text;
       $('#text-area').val(text);
-      console.log('text2 = ', text);
     } else {
       $('#text-area').val('');
     }
   } else {
     $('#text-area').val('');
-    console.log('area = ');
   }
 });
 
@@ -618,7 +645,9 @@ axios.get('http://filterbourse.ir/api/names').then(response => {
 });
 
 function numeral(tvol) {
-  if (tvol > 1e6) {
+  if (tvol > 1e9) {
+    return Math.round((tvol / 1e9) * 10) / 10 + 'B';
+  } else if (tvol > 1e6) {
     return Math.round((tvol / 1e6) * 10) / 10 + 'M';
   } else if (tvol > 1000) {
     return Math.round((tvol / 1e3) * 10) / 10 + 'K';
@@ -629,14 +658,20 @@ function PlotReal() {}
 
 function PlotHist() {
   let temp;
+  let localInterval;
 
   len = hist.length;
   temp = JSON.parse(JSON.stringify(hist));
+  if (interval >= len) {
+    localInterval = len;
+  } else {
+    localInterval = interval;
+  }
 
   if (interval == 'all') {
-    interval = len;
+    localInterval = len;
   }
-  temp = temp.slice(len - interval, len);
+  temp = temp.slice(len - localInterval, len);
 
   let dd = temp[temp.length - 1];
   let date1 = new Date(
@@ -646,7 +681,6 @@ function PlotHist() {
     .replace(/\//g, '');
 
   date1 = fixNumbers(date1.slice(2, 8));
-  console.log('date = ', date);
   let date2 = date.replace(/\//g, '');
   if (date1 != date2) {
     (dateSplitted = date.split('/')),
@@ -656,19 +690,14 @@ function PlotHist() {
         dateSplitted[2],
       )),
       (jResult = jD[0] + jD[1] + jD[2]);
-    console.log(jResult);
 
     let g = {
       date: jResult,
       vol: Number(tvol),
       pl: Number(pl),
     };
-    console.log('g = ', g);
     temp.push(g);
   }
-
-  console.log('date1 = ', date1);
-  console.log('date2 = ', date2);
 
   var parseTime = d3.timeParse('%Y-%m-%d');
   temp.forEach((d, i) => {
@@ -676,15 +705,14 @@ function PlotHist() {
       d.date.slice(0, 4) + '-' + d.date.slice(4, 6) + '-' + d.date.slice(6, 8),
     );
     if (adjusted == 0) {
-      if (log == 0) d.pl = histNotAdj[i + len - interval];
-      else d.pl = Math.log2(histNotAdj[i + len - interval]);
+      if (log == 0) d.pl = histNotAdj[i + len - localInterval];
+      else d.pl = Math.log2(histNotAdj[i + len - localInterval]);
     } else {
       if (log == 0) d.pl = d.pl;
       else d.pl = Math.log2(d.pl);
     }
   });
 
-  console.log('temp = ', temp);
   DrawHist(temp, '#hist', '%Y-%m-%d');
 }
 
@@ -710,11 +738,9 @@ $(document).ready(function() {
 
   $('#prev-list').click(() => {
     iterateListIndex--;
-    console.log('iterateListIndex = ', iterateListIndex);
     if (iterateListIndex == -1) {
       $('#prev-list').css('color', 'grey');
       iterateListIndex = 0;
-      console.log('iterateListIndex = ', iterateListIndex);
     } else {
       localStorage.setItem(
         'iterateListIndex',
@@ -726,7 +752,6 @@ $(document).ready(function() {
   });
 
   $('#watch-list').click(() => {
-    console.log('watchList = ', watchList);
     if (watchList.includes(inscode)) {
       var index = watchList.indexOf(inscode);
       watchList.splice(index, 1);
@@ -738,7 +763,6 @@ $(document).ready(function() {
     }
 
     localStorage.setItem('watchList', JSON.stringify(watchList));
-    console.log('watchList = ', watchList);
     $('#watch-list').toggleClass('fa-eye fa-eye-slash');
   });
 
@@ -774,7 +798,6 @@ $(document).ready(function() {
 
   $('#log').click(function() {
     log = 1 - log;
-    console.log('log = ', log);
     PlotHist();
   });
 });
@@ -876,16 +899,13 @@ function NumWithCommas(x) {
 
 function TextAreaChanged() {
   let t = $('#text-area').val();
-  console.log('t = ', t);
   let i;
   let c = {inscode: inscode, text: t};
   if (notes) {
     i = notes.findIndex(v => v.inscode == inscode);
     if (i != -1) {
       notes[i] = c;
-      console.log('i1 = ', i);
     } else {
-      console.log('i2 = ', i);
       notes.push(c);
     }
   } else {
@@ -895,7 +915,7 @@ function TextAreaChanged() {
   localStorage.setItem('notes', JSON.stringify(notes));
 }
 
-function DrawBuyerPower(dataa, id, timeFormat) {
+function DrawBuyerPower(dataa, id) {
   var margin = {top: 20, right: 50, bottom: 90, left: 80},
     width = 960 - margin.left - margin.right,
     height = 500 - margin.top - margin.bottom;
@@ -958,9 +978,9 @@ function DrawBuyerPower(dataa, id, timeFormat) {
   let minn = d3.min(data, function(d) {
     return d.pl;
   });
-  let maxx = d3.max(data, function(d) {
-    return d.pl;
-  });
+  let maxx = 2; //d3.max(data, function(d) {
+  //  return d.pl;
+  //});
 
   y.domain([minn - (maxx - minn) * 0.1, maxx]);
 
@@ -1002,7 +1022,6 @@ function DrawBuyerPower(dataa, id, timeFormat) {
   const yMax = d3.max(data, d => {
     return Math.max(d['pl']);
   });
-  console.log('yMax = ', yMax);
 
   svg
     .select('.y.axis')
@@ -1021,10 +1040,10 @@ function DrawBuyerPower(dataa, id, timeFormat) {
     );
 }
 
-PlotBuyerPower();
-{
+function PlotBuyerPower() {
+  let ctHist = resp.data.ctHist;
   temp = JSON.parse(JSON.stringify(ctHist));
-  ctHist = temp;
+  //ctHist = temp;
 
   let dd = temp[temp.length - 1][0].toString();
   let date1 = new Date(
@@ -1045,25 +1064,25 @@ PlotBuyerPower();
       (jResult = jD[0] + jD[1] + jD[2]);
 
     let g = [
-      jResult,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      Buy_I_Volume * pc,
-      0,
-      Sell_I_Volume * pc,
+      jResult, //0
+      Buy_CountI, //1
+      Buy_CountN, //2
+      Sell_CountI, //3
+      Sell_CountN, //4
+      Buy_I_Volume, //5
+      Buy_N_Volume, //6
+      Sell_I_Volume, //7
+      Sell_N_Volume, //8
+      Buy_I_Volume * pc, //9
+      0, //10
+      Sell_I_Volume * pc, //11
     ];
     temp.unshift(g);
   }
 
   var parseTime = d3.timeParse('%Y-%m-%d');
   temp.forEach(function(d, i) {
-    temp[i][0] = parseTime(
+    temp[i].date = parseTime(
       d[0].toString().slice(0, 4) +
         '-' +
         d[0].toString().slice(4, 6) +
@@ -1071,5 +1090,18 @@ PlotBuyerPower();
         d[0].toString().slice(6, 8),
     );
   });
-  console.log('temp = ', temp);
+
+  //var parseTime = d3.timeParse('%Y-%m-%d');
+  //temp.forEach((d, i) => {
+  //  d.date = parseTime(
+  //    d.date.slice(0, 4) + '-' + d.date.slice(4, 6) + '-' + d.date.slice(6, 8),
+  //  );
+  //});
+
+  temp.forEach((d, i) => {
+    //d.pl = v.Sell_CountI / v.Sell_I_Volume / (v.Buy_CountI / v.Buy_I_Volume);
+    d.pl = d[3] / d[7] / (d[1] / d[5]);
+  });
+
+  DrawBuyerPower(temp, '#buyer-power');
 }
