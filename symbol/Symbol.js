@@ -414,12 +414,14 @@ let interval = 360;
 let resp;
 $(document).ready(function() {
   axios.get('http://filterbourse.ir/hist/' + inscode).then(response => {
+    console.log("response = ", response);
     resp = JSON.parse(JSON.stringify(response));
     name = response.data.name;
     fullName = response.data.fullName;
     csName = response.data.csName;
 
     hist = response.data.hist;
+    console.log("hist = ", hist);
     date = response.data.date;
     pl = response.data.pl;
     pc = response.data.pc;
@@ -671,7 +673,9 @@ function PlotHist() {
   if (interval == 'all') {
     localInterval = len;
   }
+  console.log("temp0 = ", hist);
   temp = temp.slice(len - localInterval, len);
+  console.log("temp1 = ", temp);
 
   let dd = temp[temp.length - 1];
   let date1 = new Date(
@@ -713,6 +717,9 @@ function PlotHist() {
     }
   });
 
+  console.log("localInterval = ", localInterval);
+  console.log("histNotAdj = ", histNotAdj);
+  console.log("temp = ", temp);
   DrawHist(temp, '#hist', '%Y-%m-%d');
 }
 

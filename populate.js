@@ -1967,8 +1967,12 @@ function GetPClosingHist(dbo, id, a) {
 
 							if (a == 1) {
 								allRows[ind].hist = hist;
-                                let max = Match.max(...hist);
 
+                                if(v.name == 'ثشاهد')
+                                {
+
+                                    console.log("hist = ", hist[hist.length - 1]);
+                                }
 								var row = await dbo
 									.collection('allRows')
 									.updateOne({name: v.name}, {$set: {hist: hist}});
