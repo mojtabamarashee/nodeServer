@@ -1959,23 +1959,20 @@ function GetPClosingHist(dbo, id, a) {
 									pl: Number(v[6]),
 								}));
 
-							//hist = [{
-							//  date: "20200103",
-							//  vol: Number(10),
-							//  pl: Number(10),
-							//}]
-
 							if (a == 1) {
 								allRows[ind].hist = hist;
+                                let max = Math.max(...(hist.filter((v, i)=>i > hist.length - 360).map(v=>v.pl)));
 
-                                if(v.name == 'ثشاهد')
-                                {
-
-                                    console.log("hist = ", hist[hist.length - 1]);
-                                }
+								if (v.name == 'ثشاهد') {
+                                    console.log("max = ", max);
+								}
 								var row = await dbo
 									.collection('allRows')
-									.updateOne({name: v.name}, {$set: {hist: hist}});
+									.updateOne({name: v.name}, {$set: {hist: hist, peakYear:max}});
+
+								var row = await dbo
+									.collection('mi')
+									.updateOne({name: v.name}, {$set: {peakYear:max}});
 							} else {
 								hist = hist.map(v => v.pl);
 								allRows[ind].histNotAdj = hist;

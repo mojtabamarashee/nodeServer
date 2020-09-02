@@ -460,6 +460,9 @@ $(document).ready(function() {
 
     tvol = response.data.tvol;
     tvolp = response.data.QTotTran5JAvg;
+    eas = (Number(response.data.peakYear) - pl) / Number(response.data.peakYear) * 100;
+    console.log("eas = ", eas);
+    if(eas < 0) eas = 0;
 
     $('#title').text(name + '-' + pc);
     $('#name').text(name);
@@ -497,6 +500,7 @@ $(document).ready(function() {
     $('#float-val').text(floatVal + '%');
     $('#total-vol').text(numeral(totalVol));
     $('#QTotTran5JAvg').text(numeral(tvolp));
+    $('#ekhtelaf-az-saghf').text(Math.round(eas) + '%');
 
     //$('#pe').text(pe);
     //$('#sec-pe').text(sectorPE);
