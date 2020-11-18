@@ -1203,7 +1203,7 @@ function GetMarketInit(dbo, id) {
 	return new Promise(async (res, rej) => {
 		let url = 'http://www.tsetmc.com/tsev2/data/MarketWatchInit.aspx?h=0&r=0';
 		let error = 1;
-
+		var peFile = fs.createWriteStream('pe.txt');
 		date = GetDate();
 		axios
 			.get(url, {
@@ -1215,6 +1215,7 @@ function GetMarketInit(dbo, id) {
 				marketInitRecvCntr = 0;
 				response.data.split(';').map(async (v, i) => {
 					successCntr++;
+					
 					t = v.split(',');
 					if (i == 0) {
 						miDate = t[2].replace(/.*@/, '');
@@ -1255,6 +1256,7 @@ function GetMarketInit(dbo, id) {
 							.replace('ك', 'ک')
 							.replace('ك', 'ک')
 							.replace('ك', 'ک');
+						peFile.write(name +' : ' + pe)	;
 
 						//index = symbols.findIndex(v1 => (v1.name = name));
 
